@@ -1,0 +1,1297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MI App</title>
+<meta name="theme-color" content="#1E252B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: two tabs (Vendors, Projects) under a sticky search band, card grids, bottom-sheet dialogs on phones. Site-tag yellow marks every code. */
+:root{
+  --bg:#F1F0EC; --surface:#FFFFFF; --ink:#1E252B; --muted:#58626A; --line:#D9D7D0; --chip:#E6E4DD;
+  --accent:#C2410C; --accent-fg:#FFFFFF;
+  --call:#1F4E79; --call-fg:#FFFFFF;
+  --wa:#17784A; --wa-fg:#FFFFFF;
+  --danger:#B42318; --danger-fg:#FFFFFF;
+  --stamp:#F5C542; --stamp-ink:#1E252B;
+  --fee-bg:#FFF4DB; --fee-line:#E8C46A;
+  --focus:#1F6FEB; --scrim:rgba(20,25,30,.55);
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-head:'Space Grotesk','Inter',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181B; --surface:#1D2226; --ink:#ECEAE4; --muted:#A3ABB1; --line:#323A40; --chip:#272E33;
+    --accent:#F08A4B; --accent-fg:#1A0F06;
+    --call:#7DB2E6; --call-fg:#0B1722;
+    --wa:#4CCB8B; --wa-fg:#06170F;
+    --danger:#F97066; --danger-fg:#1F0805;
+    --fee-bg:#2E2813; --fee-line:#6B5A22;
+    --focus:#6CA6FF; --scrim:rgba(0,0,0,.65);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181B; --surface:#1D2226; --ink:#ECEAE4; --muted:#A3ABB1; --line:#323A40; --chip:#272E33;
+  --accent:#F08A4B; --accent-fg:#1A0F06;
+  --call:#7DB2E6; --call-fg:#0B1722;
+  --wa:#4CCB8B; --wa-fg:#06170F;
+  --danger:#F97066; --danger-fg:#1F0805;
+  --fee-bg:#2E2813; --fee-line:#6B5A22;
+  --focus:#6CA6FF; --scrim:rgba(0,0,0,.65);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root{color-scheme:light}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--font-body);min-height:100%;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1100px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+.top{padding-block:20px 12px}
+.bar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand h1{font:700 30px/1.1 var(--font-head);letter-spacing:-.02em}
+.sub{color:var(--muted);margin-top:4px;font-size:14px}
+.bar-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px 12px;border-bottom:1px solid var(--line)}
+.search-row{display:flex;gap:8px;flex-wrap:wrap}
+.search{flex:1 1 220px;min-width:0;position:relative}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search input{width:100%;min-height:44px;padding:0 12px 0 40px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.sort{flex:0 1 170px;min-width:0}
+select,input[type=text],input[type=tel],input[type=email],input[type=number],input[type=date],textarea{width:100%;min-height:44px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+textarea{resize:vertical;min-height:88px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--chip);cursor:pointer;font-size:13px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .n{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid transparent;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-fg)}
+.btn.call{background:var(--call);color:var(--call-fg)}
+.btn.wa{background:var(--wa);color:var(--wa-fg)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn.danger{background:var(--danger);color:var(--danger-fg)}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px}
+
+main{padding-top:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;box-shadow:0 1px 2px rgba(20,25,30,.06)}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.code{font:500 12px/1 var(--font-mono);letter-spacing:.06em;background:var(--stamp);color:var(--stamp-ink);padding:6px 8px;border-radius:4px;display:inline-block}
+.badge{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.badge.warn{border-color:var(--danger);color:var(--danger)}
+.badge.live{border-color:var(--wa);color:var(--wa)}
+.card h3{font:700 18px/1.25 var(--font-head);overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.person{font-size:14px;overflow-wrap:anywhere}
+.phone{font:500 14px var(--font-mono);overflow-wrap:anywhere;user-select:text}
+.fee{background:var(--fee-bg);border:1px solid var(--fee-line);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:600}
+.fee small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.actions .btn{flex:1 1 90px}
+
+.empty{max-width:520px;margin:48px auto;text-align:left}
+.empty h2{font:700 24px/1.2 var(--font-head);margin-bottom:8px}
+.empty p{color:var(--muted);margin-bottom:16px}
+.empty .row{display:flex;gap:8px;flex-wrap:wrap}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabbar button{flex:1;min-height:60px;background:none;border:0;border-top:3px solid transparent;font-weight:600;font-size:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.tabbar button[aria-current="page"]{color:var(--accent);border-top-color:var(--accent)}
+
+.ov{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{width:100%;max-width:620px;max-height:94%;overflow:auto;background:var(--surface);color:var(--ink);border-radius:16px 16px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+@media (min-width:700px){.ov{align-items:center;padding:24px}.sheet{border-radius:14px;max-height:90%}}
+.sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sheet-head h2{font:700 22px/1.2 var(--font-head);overflow-wrap:anywhere}
+.fgrid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:560px){.fgrid.two{grid-template-columns:1fr 1fr}.span2{grid-column:1/-1}}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+.field .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.field .hint.bad{color:var(--danger)}
+.form-error{color:var(--danger);font-weight:500;margin-top:10px;min-height:20px}
+.sheet-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.group{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:4px}
+.group.feebox{background:var(--fee-bg);border-color:var(--fee-line)}
+.group h3{font:700 15px var(--font-head);margin-bottom:8px}
+dl.facts{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0}
+dl.facts div{min-width:0}
+@media (min-width:560px){dl.facts{grid-template-columns:1fr 1fr}.facts .full{grid-column:1/-1}}
+dt{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+dd{margin:2px 0 0;overflow-wrap:anywhere;user-select:text}
+dd .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+dd a{color:var(--call)}
+.sec{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.sec h3{font:700 15px var(--font-head);margin-bottom:8px}
+.tpl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.docrow{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
+.docrow a{color:var(--call);font-weight:500;overflow-wrap:anywhere}
+.docrow .meta{font-size:12px}
+.upload-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.upload-row select{flex:1 1 150px}
+input[type=file]{flex:2 1 220px;min-width:0;min-height:44px;padding:8px;border:1px dashed var(--line);border-radius:10px;background:var(--surface);width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:80;max-width:calc(100% - 32px);font-size:14px;font-weight:500}
+.note{color:var(--muted);font-size:13px;margin-top:8px}
+.menu-list{display:flex;flex-direction:column;gap:8px}
+.menu-list .btn{justify-content:flex-start}
+.preview{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:200px;overflow:auto;margin:0}
+.pick{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+.pickrow{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;min-height:48px}
+.pickrow:last-child{border-bottom:0}
+.pickrow input{width:22px;height:22px;min-height:0;flex:none}
+.pickrow .meta{font-size:12px}
+.checkrow{display:flex;gap:10px;align-items:center;min-height:40px}
+.checkrow input{width:22px;height:22px;min-height:0;flex:none}
+.sendrow{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
+.sendrow .btns{display:flex;gap:6px;flex-wrap:wrap}
+.toolrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+  <div class="bar">
+    <div class="brand">
+      <h1>MI App</h1>
+      <p class="sub" id="count" aria-live="polite">Loading…</p>
+    </div>
+    <div class="bar-actions">
+      <button class="btn primary" id="btn-add" type="button" hidden>Add vendor</button>
+      <button class="btn ghost" id="btn-more" type="button">More</button>
+    </div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="wrap">
+    <div class="search-row">
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <input id="q" type="text" placeholder="Search" aria-label="Search" autocomplete="off">
+      </div>
+      <div class="sort"><select id="sort" aria-label="Sort"></select></div>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter"></div>
+  </div>
+</div>
+
+<main class="wrap" id="list" aria-live="polite"></main>
+
+<nav class="tabbar" aria-label="Sections">
+  <button type="button" id="tab-vendors" aria-current="page">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span id="tab-vendors-t">Vendors</span>
+  </button>
+  <button type="button" id="tab-projects">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span id="tab-projects-t">Projects</span>
+  </button>
+</nav>
+
+<!-- Vendor form -->
+<div class="ov" id="ov-form" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="form-title">
+    <div class="sheet-head">
+      <h2 id="form-title">Add vendor</h2>
+      <button class="btn ghost sm" type="button" data-close>Close</button>
+    </div>
+    <form id="form" novalidate>
+      <p class="code" id="form-code" style="margin-bottom:12px"></p>
+      <div class="fgrid two">
+        <div class="field span2"><label for="f-name">Company name *</label><input id="f-name" type="text" autocomplete="off"></div>
+        <div class="field"><label for="f-category">Category / trade</label><input id="f-category" type="text" list="cat-list" autocomplete="off" placeholder="e.g. Electrical"><datalist id="cat-list"></datalist></div>
+        <div class="field"><label for="f-contact">Contact person</label><input id="f-contact" type="text" autocomplete="off"></div>
+        <div class="field"><label for="f-phone">Phone *</label><input id="f-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="98765 43210"><p class="hint" id="phone-hint">Indian 10-digit numbers get +91 automatically.</p></div>
+        <div class="field"><label for="f-wa">WhatsApp number</label><input id="f-wa" type="tel" inputmode="tel" autocomplete="off"><p class="hint">Leave blank if same as phone.</p></div>
+        <div class="field"><label for="f-email">Email</label><input id="f-email" type="email" autocomplete="off" inputmode="email"></div>
+        <div class="field"><label for="f-city">City / area</label><input id="f-city" type="text" autocomplete="off"></div>
+        <div class="field"><label for="f-gst">GST number</label><input id="f-gst" type="text" autocomplete="off" maxlength="15" style="text-transform:uppercase"></div>
+        <div class="field"><label for="f-rating">Your rating</label>
+          <select id="f-rating"><option value="0">Not rated</option><option value="1">1 of 5</option><option value="2">2 of 5</option><option value="3">3 of 5</option><option value="4">4 of 5</option><option value="5">5 of 5</option></select></div>
+        <div class="field"><label for="f-status">Status</label>
+          <select id="f-status"><option>Active</option><option>On hold</option><option>Do not use</option></select></div>
+        <div class="field span2"><label for="f-notes">Notes</label><textarea id="f-notes" placeholder="Past projects, rates, payment terms, reliability"></textarea></div>
+      </div>
+      <div class="group" style="margin-top:14px">
+        <h3>Attach documents</h3>
+        <div id="form-attach"></div>
+      </div>
+      <p class="form-error" id="form-error" role="alert"></p>
+      <div class="sheet-foot">
+        <button class="btn ghost" type="button" data-close>Cancel</button>
+        <button class="btn primary" type="submit" id="form-save">Save vendor</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Vendor details -->
+<div class="ov" id="ov-detail" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="sheet-head">
+      <div style="min-width:0"><p class="code" id="detail-code" style="margin-bottom:8px"></p><h2 id="detail-title"></h2></div>
+      <button class="btn ghost sm" type="button" data-close>Close</button>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Project form -->
+<div class="ov" id="ov-pform" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pform-title">
+    <div class="sheet-head">
+      <h2 id="pform-title">Add project</h2>
+      <button class="btn ghost sm" type="button" data-close>Close</button>
+    </div>
+    <form id="pform" novalidate>
+      <p class="code" id="pform-code" style="margin-bottom:12px"></p>
+      <div class="fgrid two">
+        <div class="field span2"><label for="p-name">Project name *</label><input id="p-name" type="text" autocomplete="off"></div>
+        <div class="field"><label for="p-client">Client</label><input id="p-client" type="text" autocomplete="off"></div>
+        <div class="field"><label for="p-location">Location</label><input id="p-location" type="text" autocomplete="off"></div>
+        <div class="field"><label for="p-type">Project type</label>
+          <select id="p-type"><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Infrastructure</option><option>Interior fit-out</option><option>Renovation</option><option>Other</option></select></div>
+        <div class="field"><label for="p-status">Status</label>
+          <select id="p-status"><option>Planning</option><option>Ongoing</option><option>On hold</option><option>Completed</option></select></div>
+        <div class="field"><label for="p-start">Start date</label><input id="p-start" type="date"></div>
+        <div class="field"><label for="p-end">Target completion</label><input id="p-end" type="date"></div>
+        <div class="field span2"><label for="p-value">Estimated project value (₹)</label><input id="p-value" type="number" inputmode="decimal" min="0" step="any" placeholder="Optional"></div>
+        <div class="field span2"><label for="p-scope">Scope of work</label><textarea id="p-scope" placeholder="What vendors need to know: trades required, quantities, specifications, deadlines"></textarea></div>
+        <div class="field span2"><label for="p-notes">Private notes (never shared)</label><textarea id="p-notes" style="min-height:64px"></textarea></div>
+      </div>
+      <div class="group feebox" style="margin-top:14px">
+        <h3>Fee for our services</h3>
+        <div class="fgrid two">
+          <div class="field"><label for="p-fee">Fee amount</label><input id="p-fee" type="number" inputmode="decimal" min="0" step="any"></div>
+          <div class="field"><label for="p-feebasis">Fee basis</label>
+            <select id="p-feebasis"><option>Fixed fee</option><option>Percentage of project cost</option><option>Monthly retainer</option><option>Per site visit</option></select></div>
+          <div class="field span2"><label for="p-feenote">Fee notes</label><input id="p-feenote" type="text" autocomplete="off" placeholder="e.g. 50% advance, balance on completion"></div>
+        </div>
+        <p class="note" style="margin-top:6px">Your fee is private. It is only included in a message to vendors if you tick it when sharing.</p>
+      </div>
+      <div class="group" style="margin-top:14px">
+        <h3>Attach documents</h3>
+        <div id="pform-attach"></div>
+      </div>
+      <p class="form-error" id="pform-error" role="alert"></p>
+      <div class="sheet-foot">
+        <button class="btn ghost" type="button" data-close>Cancel</button>
+        <button class="btn primary" type="submit" id="pform-save">Save project</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Project details -->
+<div class="ov" id="ov-pdetail" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pdetail-title">
+    <div class="sheet-head">
+      <div style="min-width:0"><p class="code" id="pdetail-code" style="margin-bottom:8px"></p><h2 id="pdetail-title"></h2></div>
+      <button class="btn ghost sm" type="button" data-close>Close</button>
+    </div>
+    <div id="pdetail-body"></div>
+  </div>
+</div>
+
+<!-- More menu -->
+<div class="ov" id="ov-more" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="more-title">
+    <div class="sheet-head">
+      <h2 id="more-title">More</h2>
+      <button class="btn ghost sm" type="button" data-close>Close</button>
+    </div>
+    <div class="field" id="profile-box" style="margin-bottom:16px">
+      <label for="f-me">Your name (used in WhatsApp and email messages)</label>
+      <div style="display:flex;gap:8px"><input id="f-me" type="text" autocomplete="off" placeholder="e.g. Sunny, Project Liaison"><button class="btn ghost" type="button" id="save-me">Save</button></div>
+    </div>
+    <div class="menu-list">
+      <button class="btn ghost" type="button" id="btn-import">Import vendors from CSV</button>
+      <button class="btn ghost" type="button" id="btn-export">Export vendors (CSV)</button>
+      <button class="btn ghost" type="button" id="btn-export-p">Export projects (CSV)</button>
+      <button class="btn ghost" type="button" id="btn-template">Download blank vendor CSV template</button>
+      <button class="btn ghost" type="button" id="btn-backup">Back up everything (file)</button>
+      <button class="btn ghost" type="button" id="btn-restore">Restore from a backup file</button>
+      <button class="btn primary" type="button" id="btn-install" hidden>Install MI App on this phone</button>
+    </div>
+    <input type="file" id="file-import" accept=".csv,text/csv" hidden>
+    <input type="file" id="file-restore" accept=".json,application/json" hidden>
+    <p class="note">Your vendors, projects and documents are stored only on this phone. Back up now and then, and before you change phones or clear browser data.</p>
+    <p class="note">Vendor CSV columns recognised: Company, Category, Contact person, Phone, WhatsApp, Email, City, GST, Rating, Status, Notes. Vendors whose phone number is already listed are skipped.</p>
+  </div>
+</div>
+
+<!-- Share project with vendors -->
+<div class="ov" id="ov-share" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div class="sheet-head">
+      <h2 id="share-title">Share project</h2>
+      <button class="btn ghost sm" type="button" data-close>Done</button>
+    </div>
+    <div id="share-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+var CATS=['Civil contractor','Electrical','Plumbing & sanitary','HVAC','Fire fighting','Structural steel','Cement & RMC','Tiles & flooring','Paint & finishes','Carpentry & interiors','Glass & aluminium','Waterproofing','Lifts & escalators','Landscaping','Equipment rental','Labour supplier','Material supplier','Architect & design','Other'];
+var DOC_LABELS=['Quotation','Work order','Invoice','GST certificate','PAN card','Agreement','Insurance','Licence','Drawing','BOQ','Site photo','Other'];
+var ACCEPT='image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.dwg,.dxf,.zip';
+var MAXB=50*1048576;
+var GST_RE=/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+var PSTATUS=['Planning','Ongoing','On hold','Completed'];
+var state={vendors:[],projects:[],vLoaded:false,pLoaded:false,db:null,dl:null,as:null,dbChecked:false,
+  tab:'vendors',qV:'',qP:'',catV:'all',stP:'all',sortV:'name',sortP:'recent',
+  editingId:null,editingPid:null,detailId:null,pDetailId:null,me:'',lastFocus:null,pendV:[],pendP:[]};
+
+function $(s,r){return (r||document).querySelector(s);}
+function h(tag,props){
+  var e=document.createElement(tag);
+  if(props){for(var k in props){var v=props[k];if(v==null||v===false)continue;
+    if(k==='class')e.className=v;
+    else if(k==='text')e.textContent=v;
+    else if(k.indexOf('on')===0)e.addEventListener(k.slice(2),v);
+    else e.setAttribute(k,v===true?'':v);}}
+  for(var i=2;i<arguments.length;i++){var kids=[].concat(arguments[i]);
+    for(var j=0;j<kids.length;j++){var c=kids[j];if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(c));}}
+  return e;
+}
+var ICONS={
+  phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  mail:'<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
+  send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'
+};
+function icon(n){var s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('width','18');s.setAttribute('height','18');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('fill','none');s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','2');s.setAttribute('stroke-linecap','round');s.setAttribute('stroke-linejoin','round');s.setAttribute('aria-hidden','true');s.innerHTML=ICONS[n];return s;}
+
+/* ---------- phone, email helpers ---------- */
+function digits(p){return String(p||'').replace(/\D/g,'');}
+function waNum(p){var raw=String(p||'').trim(),d=digits(raw);if(raw.charAt(0)==='+')return d;if(d.length===10)return '91'+d;if(d.length===11&&d.charAt(0)==='0')return '91'+d.slice(1);return d;}
+function telHref(p){var raw=String(p||'').trim(),d=digits(raw);if(raw.charAt(0)==='+')return 'tel:+'+d;if(d.length===10)return 'tel:+91'+d;if(d.length===11&&d.charAt(0)==='0')return 'tel:+91'+d.slice(1);if(d.length===12&&d.indexOf('91')===0)return 'tel:+'+d;return 'tel:'+d;}
+function waHref(v,text){return 'https://wa.me/'+waNum(v.waPhone||v.phone)+(text?'?text='+encodeURIComponent(text):'');}
+function mailto(to,subject,body,bcc){
+  var q=[];if(bcc)q.push('bcc='+encodeURIComponent(bcc).replace(/%40/g,'@').replace(/%2C/g,','));
+  q.push('subject='+encodeURIComponent(subject));q.push('body='+encodeURIComponent(String(body).replace(/\n/g,'\r\n')));
+  return 'mailto:'+(to||'')+'?'+q.join('&');
+}
+function who(v){return v.contact||v.name;}
+function greeting(v){return 'Hello '+who(v)+','+(state.me?' This is '+state.me+'.':'')+' ';}
+
+/* ---------- formatting ---------- */
+function fmtDate(ms){return ms?new Date(ms).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';}
+function fmtDay(s){if(!s)return '';var d=new Date(s+'T00:00:00');return isNaN(d)?s:d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function inr(n){return '₹'+Number(n).toLocaleString('en-IN');}
+function fmtSize(b){return b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round((b||0)/1024))+' KB';}
+function stars(n){return n?n+' of 5':'Not rated';}
+function feeText(p){
+  if(!p.fee&&p.fee!==0)return '';
+  if(p.fee==='')return '';
+  var n=Number(p.fee);if(!isFinite(n)||n<=0)return '';
+  var b=p.feeBasis||'Fixed fee';
+  if(b==='Percentage of project cost')return n+'% of project cost';
+  if(b==='Monthly retainer')return inr(n)+' per month';
+  if(b==='Per site visit')return inr(n)+' per site visit';
+  return inr(n)+' fixed fee';
+}
+
+/* ---------- toast ---------- */
+var toastT;
+function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;},3600);}
+
+/* ---------- dialogs ---------- */
+var OVS=['#ov-share','#ov-pform','#ov-pdetail','#ov-form','#ov-detail','#ov-more'];
+function openOv(id,focusSel){state.lastFocus=document.activeElement;var o=$(id);o.hidden=false;var f=focusSel?$(focusSel,o):o.querySelector('button,input,select,textarea');if(f)f.focus();}
+function closeOv(id){
+  var o=$(id);o.hidden=true;
+  if(id==='#ov-detail')state.detailId=null;
+  if(id==='#ov-pdetail')state.pDetailId=null;
+  if(state.lastFocus&&state.lastFocus.focus&&document.contains(state.lastFocus))state.lastFocus.focus();
+}
+function closeTop(){for(var i=0;i<OVS.length;i++){if(!$(OVS[i]).hidden){closeOv(OVS[i]);return;}}}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeTop();});
+OVS.forEach(function(id){
+  var o=$(id);
+  o.addEventListener('mousedown',function(e){if(e.target===o)closeOv(id);});
+  o.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',function(){closeOv(id);});});
+});
+
+/* ---------- data helpers ---------- */
+function byId(id){for(var i=0;i<state.vendors.length;i++)if(state.vendors[i].id===id)return state.vendors[i];return null;}
+function byPid(id){for(var i=0;i<state.projects.length;i++)if(state.projects[i].id===id)return state.projects[i];return null;}
+function codeNum(c){var m=/(\d+)$/.exec(c||'');return m?parseInt(m[1],10):0;}
+function nextVNum(){var m=500;state.vendors.forEach(function(v){var n=codeNum(v.code||v.id);if(n>m)m=n;});return m+1;}
+function nextPNum(){var m=100;state.projects.forEach(function(p){var n=codeNum(p.code||p.id);if(n>m)m=n;});return m+1;}
+function fmtCode(n){return 'MI-'+n;}
+function fmtPCode(n){return 'PJ-'+n;}
+function findByPhone(p,exceptId){var d=waNum(p);if(!d)return null;for(var i=0;i<state.vendors.length;i++){var v=state.vendors[i];if(v.id===exceptId)continue;if(waNum(v.phone)===d)return v;}return null;}
+function recOf(kind,id){return kind==='vendors'?byId(id):byPid(id);}
+
+/* ---------- attachments ---------- */
+function pickerUI(box,list){
+  box.replaceChildren();
+  var label=h('select',{'aria-label':'Document type'});
+  DOC_LABELS.forEach(function(l){label.append(h('option',{text:l}));});
+  var input=h('input',{type:'file',multiple:true,accept:ACCEPT,'aria-label':'Choose files to attach'});
+  var listBox=h('div');
+  function draw(){
+    listBox.replaceChildren();
+    list.forEach(function(it,i){
+      listBox.append(h('div',{class:'docrow'},
+        h('div',{style:'min-width:0'},h('p',{style:'overflow-wrap:anywhere',text:it.file.name}),h('p',{class:'meta',text:it.label+' · '+fmtSize(it.file.size)})),
+        h('button',{class:'btn ghost sm',type:'button',onclick:function(){list.splice(i,1);draw();}},'Remove')));
+    });
+  }
+  input.addEventListener('change',function(){
+    [].forEach.call(input.files||[],function(f){list.push({file:f,label:label.value});});
+    input.value='';draw();
+  });
+  box.append(h('div',{class:'upload-row',style:'margin-top:0'},label,input),listBox,
+    h('p',{class:'note',text:'Photos, PDF, Word, Excel, CAD or any file, up to 50 MB each. Files are saved when you tap Save. You can also take a photo with the camera.'}));
+  draw();
+}
+async function uploadPending(list){
+  var docs=[],failed=[];
+  for(var i=0;i<list.length;i++){
+    var it=list[i];
+    if(it.file.size>MAXB){failed.push(it.file.name+' (over 50 MB)');continue;}
+    try{var type=it.file.type||'application/octet-stream';var r=await state.as.upload(it.file,{type:type});docs.push({id:r.id,name:it.file.name,label:it.label,size:r.sizeBytes,type:r.contentType,addedAt:Date.now()});}
+    catch(e){failed.push(it.file.name);}
+  }
+  return {docs:docs,failed:failed};
+}
+async function openDoc(d,save){
+  try{
+    var rec=await state.as.get(d.id);
+    if(!rec){toast('This file is missing from the phone.');return;}
+    var url=URL.createObjectURL(new Blob([rec.blob],{type:rec.type||'application/octet-stream'})),a=document.createElement('a');
+    a.href=url;
+    if(save){a.download=d.name;}else{a.target='_blank';a.rel='noopener';}
+    document.body.append(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},120000);
+    if(save)toast('Saved to your Downloads');
+  }catch(e){toast('Could not open the file.');}
+}
+function docPath(kind,id){return kind+'/'+id;}
+function renderDocs(rec,kind){
+  var box=$(kind==='vendors'?'#docs-box':'#pdocs-box');if(!box||!rec)return;
+  var keep=box.querySelector('select')?box.querySelector('select').value:'';
+  box.replaceChildren();
+  var docs=rec.docs||[];
+  if(!docs.length)box.append(h('p',{class:'note',style:'margin:0 0 6px',text:'No documents attached yet.'}));
+  docs.forEach(function(d){
+    var row=h('div',{class:'docrow'},
+      h('div',{style:'min-width:0'},
+        h('a',{href:'#',text:d.name,onclick:function(e){e.preventDefault();openDoc(d,false);}}),
+        h('p',{class:'meta',text:[d.label,fmtSize(d.size),fmtDate(d.addedAt)].filter(Boolean).join(' · ')})),
+      h('div',{class:'confirm'},
+        h('button',{class:'btn ghost sm',type:'button',onclick:function(){openDoc(d,true);}},'Save'),
+        h('button',{class:'btn ghost sm',type:'button',onclick:function(){askRemoveDoc(rec,kind,d,row);}},'Remove')));
+    box.append(row);
+  });
+  var label=h('select',{'aria-label':'Document type'});
+  DOC_LABELS.forEach(function(l){label.append(h('option',{text:l}));});
+  if(keep)label.value=keep;
+  var file=h('input',{type:'file',multiple:true,accept:ACCEPT,'aria-label':'Choose files to attach'});
+  var btn=h('button',{class:'btn primary',type:'button'},'Attach');
+  btn.addEventListener('click',function(){uploadDocs(kind,rec.id,label.value,file,btn);});
+  box.append(h('div',{class:'upload-row'},label,file,btn),h('p',{class:'note',text:'Any file type up to 50 MB. Tap a file to open it, or Save to put a copy in Downloads.'}));
+}
+async function uploadDocs(kind,id,label,input,btn){
+  var files=[].slice.call(input.files||[]);
+  if(!files.length){toast('Choose a file first.');return;}
+  btn.disabled=true;btn.textContent='Attaching…';
+  var up=await uploadPending(files.map(function(f){return {file:f,label:label};}));
+  if(up.docs.length){
+    try{var cur=recOf(kind,id);await state.db.doc(docPath(kind,id)).update({docs:((cur&&cur.docs)||[]).concat(up.docs)});}
+    catch(e){up.docs=[];up.failed.push('could not save the attachment list, try again');}
+  }
+  btn.disabled=false;btn.textContent='Attach';input.value='';
+  toast(up.docs.length?('Attached '+up.docs.length+(up.docs.length===1?' document':' documents')+(up.failed.length?'. Skipped: '+up.failed.join(', '):'')):('Nothing attached. '+up.failed.join(', ')));
+}
+function askRemoveDoc(rec,kind,d,row){
+  row.replaceChildren(
+    h('p',{style:'min-width:0',text:'Remove '+d.name+'? The file is deleted.'}),
+    h('div',{class:'confirm'},
+      h('button',{class:'btn ghost sm',type:'button',onclick:function(){renderDocs(recOf(kind,rec.id)||rec,kind);}},'Keep'),
+      h('button',{class:'btn danger sm',type:'button',onclick:function(){removeDoc(kind,rec.id,d);}},'Remove')));
+}
+async function removeDoc(kind,id,d){
+  try{
+    var cur=recOf(kind,id);
+    await state.db.doc(docPath(kind,id)).update({docs:((cur&&cur.docs)||[]).filter(function(x){return x.id!==d.id;})});
+    if(state.as)state.as.delete(d.id).catch(function(){});
+    toast('Document removed');
+  }catch(e){toast('Could not remove the document.');}
+}
+
+/* ---------- tabs ---------- */
+function setTab(t){
+  state.tab=t;
+  $('#tab-vendors').setAttribute('aria-current',t==='vendors'?'page':'false');
+  $('#tab-projects').setAttribute('aria-current',t==='projects'?'page':'false');
+  var q=$('#q');q.value=t==='vendors'?state.qV:state.qP;
+  q.placeholder=t==='vendors'?'Search name, code, contact, phone, city':'Search project, code, client, location';
+  var s=$('#sort');s.replaceChildren();
+  var opts=t==='vendors'?[['name','Name A to Z'],['code','Vendor code'],['recent','Recently added'],['rating','Highest rated']]:[['recent','Recently added'],['name','Name A to Z'],['start','Start date'],['end','Target completion']];
+  opts.forEach(function(o){s.append(h('option',{value:o[0],text:o[1]}));});
+  s.value=t==='vendors'?state.sortV:state.sortP;
+  $('#btn-add').textContent=t==='vendors'?'Add vendor':'Add project';
+  render();window.scrollTo(0,0);
+}
+$('#tab-vendors').addEventListener('click',function(){setTab('vendors');});
+$('#tab-projects').addEventListener('click',function(){setTab('projects');});
+
+/* ---------- vendor list ---------- */
+function vMatches(v){
+  if(state.catV!=='all'&&(v.category||'Uncategorised')!==state.catV)return false;
+  if(!state.qV)return true;
+  var hay=[v.code,v.name,v.contact,v.phone,v.waPhone,v.email,v.city,v.category,v.gst,v.notes].join(' ').toLowerCase();
+  var parts=state.qV.toLowerCase().split(/\s+/).filter(Boolean);
+  for(var i=0;i<parts.length;i++)if(hay.indexOf(parts[i])<0)return false;
+  return true;
+}
+function vSorted(list){
+  var by={
+    name:function(x,y){return (x.name||'').localeCompare(y.name||'');},
+    code:function(x,y){return codeNum(x.code)-codeNum(y.code);},
+    recent:function(x,y){return (y.createdAt||0)-(x.createdAt||0);},
+    rating:function(x,y){return (y.rating||0)-(x.rating||0)||(x.name||'').localeCompare(y.name||'');}
+  };
+  return list.slice().sort(by[state.sortV]||by.name);
+}
+function vCard(v){
+  var line=[v.category,v.city].filter(Boolean).join(' · ');
+  var nd=(v.docs||[]).length;
+  return h('article',{class:'card'},
+    h('div',{class:'card-top'},h('span',{class:'code',text:v.code||v.id}),v.status&&v.status!=='Active'?h('span',{class:'badge warn',text:v.status}):null),
+    h('h3',{text:v.name}),
+    line?h('p',{class:'meta',text:line}):null,
+    v.contact?h('p',{class:'person',text:v.contact}):null,
+    h('p',{class:'phone',text:v.phone}),
+    nd?h('p',{class:'meta',text:nd+(nd===1?' document attached':' documents attached')}):null,
+    h('div',{class:'actions'},
+      h('a',{class:'btn call',href:telHref(v.phone),'aria-label':'Call '+v.name},icon('phone'),'Call'),
+      h('a',{class:'btn wa',href:waHref(v,greeting(v)),target:'_blank',rel:'noopener','aria-label':'WhatsApp '+v.name},icon('chat'),'WhatsApp'),
+      h('button',{class:'btn ghost',type:'button',onclick:function(){openDetail(v.id);}},'Details')
+    )
+  );
+}
+function renderVChips(){
+  var counts={};state.vendors.forEach(function(v){var c=v.category||'Uncategorised';counts[c]=(counts[c]||0)+1;});
+  var names=Object.keys(counts).sort(),box=$('#chips');box.replaceChildren();
+  if(state.catV!=='all'&&!counts[state.catV])state.catV='all';
+  if(!names.length)return;
+  function chip(label,val,n){box.append(h('button',{class:'chip',type:'button','aria-pressed':state.catV===val?'true':'false',onclick:function(){state.catV=val;render();}},label,h('span',{class:'n',text:String(n)})));}
+  chip('All','all',state.vendors.length);
+  names.forEach(function(c){chip(c,c,counts[c]);});
+}
+function renderVendors(host){
+  renderVChips();
+  var list=vSorted(state.vendors.filter(vMatches));
+  var n=state.vendors.length,cats={};state.vendors.forEach(function(v){cats[v.category||'Uncategorised']=1;});var c=Object.keys(cats).length;
+  $('#count').textContent=n===0?'No vendors yet':(list.length!==n?list.length+' of '+n+' vendors':n+(n===1?' vendor':' vendors')+' · '+c+(c===1?' category':' categories'));
+  if(!n){
+    host.append(h('div',{class:'empty'},
+      h('h2',{text:'No vendors yet'}),
+      h('p',{text:'Add your first vendor, or import a CSV list of companies you already work with. Codes start at MI-501. Each vendor gets Call and WhatsApp buttons and a place for documents.'}),
+      h('div',{class:'row'},h('button',{class:'btn primary',type:'button',onclick:function(){openForm(null);}},'Add first vendor'),h('button',{class:'btn ghost',type:'button',onclick:function(){openOv('#ov-more');}},'Import from CSV'))));
+    return;
+  }
+  if(!list.length){
+    host.append(h('div',{class:'empty'},h('h2',{text:'No match'}),h('p',{text:'No vendor matches your search and filter.'}),h('button',{class:'btn ghost',type:'button',onclick:function(){state.qV='';state.catV='all';$('#q').value='';render();}},'Clear search and filter')));
+    return;
+  }
+  var g=h('div',{class:'grid'});list.forEach(function(v){g.append(vCard(v));});host.append(g);
+}
+
+/* ---------- project list ---------- */
+function pMatches(p){
+  if(state.stP!=='all'&&(p.status||'Planning')!==state.stP)return false;
+  if(!state.qP)return true;
+  var hay=[p.code,p.name,p.client,p.location,p.type,p.scope].join(' ').toLowerCase();
+  var parts=state.qP.toLowerCase().split(/\s+/).filter(Boolean);
+  for(var i=0;i<parts.length;i++)if(hay.indexOf(parts[i])<0)return false;
+  return true;
+}
+function pSorted(list){
+  var by={
+    recent:function(x,y){return (y.createdAt||0)-(x.createdAt||0);},
+    name:function(x,y){return (x.name||'').localeCompare(y.name||'');},
+    start:function(x,y){return (x.start||'9999').localeCompare(y.start||'9999');},
+    end:function(x,y){return (x.end||'9999').localeCompare(y.end||'9999');}
+  };
+  return list.slice().sort(by[state.sortP]||by.recent);
+}
+function statusBadge(s){return h('span',{class:'badge'+(s==='Ongoing'?' live':(s==='On hold'?' warn':'')),text:s||'Planning'});}
+function pCard(p){
+  var line=[p.client,p.location].filter(Boolean).join(' · ');
+  var dates=[p.start?'Starts '+fmtDay(p.start):'',p.end?'Due '+fmtDay(p.end):''].filter(Boolean).join(' · ');
+  var ft=feeText(p),nd=(p.docs||[]).length,ns=(p.shares||[]).length;
+  return h('article',{class:'card'},
+    h('div',{class:'card-top'},h('span',{class:'code',text:p.code||p.id}),statusBadge(p.status)),
+    h('h3',{text:p.name}),
+    line?h('p',{class:'meta',text:line}):null,
+    dates?h('p',{class:'meta',text:dates}):null,
+    ft?h('p',{class:'fee'},h('small',{text:'Our fee'}),ft):null,
+    (nd||ns)?h('p',{class:'meta',text:[nd?nd+(nd===1?' document':' documents'):'',ns?'shared with '+ns+(ns===1?' vendor':' vendors'):''].filter(Boolean).join(' · ')}):null,
+    h('div',{class:'actions'},
+      h('button',{class:'btn primary',type:'button',onclick:function(){openShare(p.id);}},icon('send'),'Share'),
+      h('button',{class:'btn ghost',type:'button',onclick:function(){openPDetail(p.id);}},'Details'))
+  );
+}
+function renderPChips(){
+  var counts={};state.projects.forEach(function(p){var s=p.status||'Planning';counts[s]=(counts[s]||0)+1;});
+  var box=$('#chips');box.replaceChildren();
+  if(state.stP!=='all'&&!counts[state.stP])state.stP='all';
+  if(!state.projects.length)return;
+  function chip(label,val,n){box.append(h('button',{class:'chip',type:'button','aria-pressed':state.stP===val?'true':'false',onclick:function(){state.stP=val;render();}},label,h('span',{class:'n',text:String(n)})));}
+  chip('All','all',state.projects.length);
+  PSTATUS.forEach(function(s){if(counts[s])chip(s,s,counts[s]);});
+}
+function renderProjects(host){
+  renderPChips();
+  var list=pSorted(state.projects.filter(pMatches)),n=state.projects.length;
+  $('#count').textContent=n===0?'No projects yet':(list.length!==n?list.length+' of '+n+' projects':n+(n===1?' project':' projects'));
+  if(!n){
+    host.append(h('div',{class:'empty'},
+      h('h2',{text:'No projects yet'}),
+      h('p',{text:'Add a project with its details, your fee and drawings, then share it with the vendors you pick by WhatsApp or email. Project codes start at PJ-101.'}),
+      h('div',{class:'row'},h('button',{class:'btn primary',type:'button',onclick:function(){openPForm(null);}},'Add first project'))));
+    return;
+  }
+  if(!list.length){
+    host.append(h('div',{class:'empty'},h('h2',{text:'No match'}),h('p',{text:'No project matches your search and filter.'}),h('button',{class:'btn ghost',type:'button',onclick:function(){state.qP='';state.stP='all';$('#q').value='';render();}},'Clear search and filter')));
+    return;
+  }
+  var g=h('div',{class:'grid'});list.forEach(function(p){g.append(pCard(p));});host.append(g);
+}
+
+function render(){
+  var host=$('#list');host.replaceChildren();
+  $('#btn-add').hidden=!state.db;
+  var nv=state.vendors.length,np=state.projects.length;
+  $('#tab-vendors-t').textContent='Vendors'+(state.vLoaded?' ('+nv+')':'');
+  $('#tab-projects-t').textContent='Projects'+(state.pLoaded?' ('+np+')':'');
+  if(!state.dbChecked||(state.db&&!(state.vLoaded&&state.pLoaded))){$('#chips').replaceChildren();$('#count').textContent='Loading…';host.append(h('div',{class:'empty'},h('p',{text:'Loading…'})));return;}
+  if(!state.db){$('#chips').replaceChildren();$('#count').textContent='Storage blocked';host.append(h('div',{class:'empty'},h('h2',{text:'Storage is blocked'}),h('p',{text:'MI App keeps your data on this phone, and the browser is blocking that. Turn off private browsing, allow site data, then reopen the app.'})));return;}
+  if(state.tab==='vendors')renderVendors(host);else renderProjects(host);
+}
+
+/* ---------- vendor details ---------- */
+function copyText(t,label){
+  try{navigator.clipboard.writeText(t).then(function(){toast(label+' copied');},function(){toast('Copy is blocked here. Select the text and copy it.');});}
+  catch(e){toast('Copy is blocked here. Select the text and copy it.');}
+}
+function fact(label,content,full){return h('div',{class:full?'full':null},h('dt',{text:label}),h('dd',null,content));}
+function openDetail(id){
+  var v=byId(id);if(!v)return;
+  state.detailId=id;
+  $('#detail-code').textContent=v.code||v.id;
+  $('#detail-title').textContent=v.name;
+  var body=$('#detail-body');body.replaceChildren();
+  var msg=h('textarea',{id:'msg','aria-label':'WhatsApp message'});
+  msg.value=greeting(v);
+  var send=h('a',{class:'btn wa',href:waHref(v,msg.value),target:'_blank',rel:'noopener'},icon('chat'),'Open WhatsApp with this message');
+  msg.addEventListener('input',function(){send.setAttribute('href',waHref(v,msg.value));});
+  var tpls=[
+    ['Quotation','Please share your quotation for ____ with rates, timeline and payment terms. Thank you.'],
+    ['Site visit','Can you visit the site on ____ at ____? Please confirm.'],
+    ['Follow-up','Following up on ____. Please share the current status.'],
+    ['Payment','Your invoice no. ____ is being processed. Please share any pending documents.'],
+    ['Delivery','Please confirm the delivery date and time for ____.']
+  ];
+  var tplRow=h('div',{class:'tpl'});
+  tpls.forEach(function(t){tplRow.append(h('button',{class:'chip',type:'button',onclick:function(){msg.value=greeting(v)+t[1];send.setAttribute('href',waHref(v,msg.value));msg.focus();}},t[0]));});
+  var sharedP=state.projects.filter(function(p){return (p.shares||[]).some(function(s){return s.v===v.id;});});
+  body.append(
+    h('div',{class:'actions',style:'margin-top:0'},
+      h('a',{class:'btn call',href:telHref(v.phone)},icon('phone'),'Call '+v.phone),
+      h('a',{class:'btn wa',href:waHref(v,greeting(v)),target:'_blank',rel:'noopener'},icon('chat'),'WhatsApp'),
+      v.email?h('a',{class:'btn ghost',href:mailto(v.email,'',greeting(v))},icon('mail'),'Email'):null
+    ),
+    h('dl',{class:'facts'},
+      fact('Category',v.category||'Not set'),
+      fact('Contact person',v.contact||'Not set'),
+      fact('Phone',h('span',{class:'inline'},h('span',{class:'phone',text:v.phone}),h('button',{class:'btn ghost sm',type:'button',onclick:function(){copyText(v.phone,'Phone number');}},'Copy'))),
+      v.waPhone?fact('WhatsApp number',h('span',{class:'phone',text:v.waPhone})):null,
+      v.email?fact('Email',h('span',{class:'inline'},h('a',{href:mailto(v.email,'',''),text:v.email}),h('button',{class:'btn ghost sm',type:'button',onclick:function(){copyText(v.email,'Email');}},'Copy'))):null,
+      fact('City / area',v.city||'Not set'),
+      fact('GST number',v.gst?h('span',{class:'phone',text:v.gst}):'Not set'),
+      fact('Rating',stars(v.rating)),
+      fact('Status',v.status||'Active'),
+      v.notes?fact('Notes',h('span',{style:'white-space:pre-wrap',text:v.notes}),true):null,
+      sharedP.length?fact('Projects shared with this vendor',h('span',{style:'white-space:pre-wrap',text:sharedP.map(function(p){var s=p.shares.filter(function(x){return x.v===v.id;})[0];return p.code+' '+p.name+' ('+s.ch+', '+fmtDate(s.at)+')';}).join('\n')}),true):null,
+      v.createdAt?fact('Added',fmtDate(v.createdAt)):null
+    ),
+    h('div',{class:'sec'},h('h3',{text:'Documents'}),h('div',{id:'docs-box'})),
+    h('div',{class:'sec'},h('h3',{text:'Write a WhatsApp message'}),tplRow,msg,h('div',{class:'actions'},send)),
+    h('div',{class:'sec',id:'admin-row'},h('div',{class:'sheet-foot',style:'margin-top:0;justify-content:space-between'},
+      h('button',{class:'btn danger',type:'button',onclick:function(){askDelete(v);}},'Delete vendor'),
+      h('button',{class:'btn primary',type:'button',onclick:function(){closeOv('#ov-detail');openForm(v.id);}},'Edit vendor')))
+  );
+  renderDocs(v,'vendors');
+  openOv('#ov-detail');
+}
+function askDelete(v){
+  var row=$('#admin-row');row.replaceChildren(
+    h('p',{style:'margin-bottom:10px',text:'Delete '+v.code+' ('+v.name+') permanently, with its '+(v.docs||[]).length+' attached documents? This cannot be undone.'}),
+    h('div',{class:'confirm'},
+      h('button',{class:'btn ghost',type:'button',onclick:function(){openDetail(v.id);}},'Keep vendor'),
+      h('button',{class:'btn danger',type:'button',onclick:function(){doDelete(v);}},'Yes, delete')));
+}
+async function doDelete(v){
+  try{
+    await state.db.doc('vendors/'+v.id).delete();closeOv('#ov-detail');toast(v.code+' deleted');
+    if(state.as)(v.docs||[]).forEach(function(d){state.as.delete(d.id).catch(function(){});});
+  }
+  catch(e){toast('Could not delete. Try again.');}
+}
+
+/* ---------- vendor add / edit ---------- */
+function setField(id,val){$('#'+id).value=val==null?'':val;}
+function openForm(id){
+  if(!state.db)return;
+  state.editingId=id;
+  var v=id?byId(id):null;
+  $('#form-title').textContent=v?'Edit vendor':'Add vendor';
+  $('#form-code').textContent=v?(v.code||v.id):'New code: '+fmtCode(nextVNum())+' (assigned when you save)';
+  setField('f-name',v&&v.name);setField('f-category',v&&v.category);setField('f-contact',v&&v.contact);
+  setField('f-phone',v&&v.phone);setField('f-wa',v&&v.waPhone);setField('f-email',v&&v.email);
+  setField('f-city',v&&v.city);setField('f-gst',v&&v.gst);setField('f-rating',v?String(v.rating||0):'0');
+  setField('f-status',v?(v.status||'Active'):'Active');setField('f-notes',v&&v.notes);
+  $('#form-error').textContent='';$('#phone-hint').textContent='Indian 10-digit numbers get +91 automatically.';$('#phone-hint').className='hint';
+  $('#form-save').disabled=false;$('#form-save').textContent='Save vendor';
+  state.pendV=[];pickerUI($('#form-attach'),state.pendV);
+  if(v&&(v.docs||[]).length)$('#form-attach').prepend(h('p',{class:'note',style:'margin:0 0 6px',text:'Already attached: '+v.docs.length+(v.docs.length===1?' document':' documents')+'. Manage them from Details.'}));
+  openOv('#ov-form','#f-name');
+}
+$('#f-phone').addEventListener('input',function(){
+  var dup=findByPhone(this.value,state.editingId),hint=$('#phone-hint');
+  if(dup){hint.textContent='Already listed as '+dup.code+' ('+dup.name+').';hint.className='hint bad';}
+  else{hint.textContent='Indian 10-digit numbers get +91 automatically.';hint.className='hint';}
+});
+function readForm(){
+  function t(id){return $('#'+id).value.trim();}
+  return {name:t('f-name'),category:t('f-category'),contact:t('f-contact'),phone:t('f-phone'),waPhone:t('f-wa'),email:t('f-email'),city:t('f-city'),gst:t('f-gst').toUpperCase(),rating:parseInt($('#f-rating').value,10)||0,status:$('#f-status').value,notes:t('f-notes')};
+}
+function validate(f){
+  if(!f.name)return {msg:'Enter the company name.',field:'f-name'};
+  if(digits(f.phone).length<10)return {msg:'Enter a phone number with at least 10 digits.',field:'f-phone'};
+  if(f.waPhone&&digits(f.waPhone).length<10)return {msg:'The WhatsApp number needs at least 10 digits, or leave it blank.',field:'f-wa'};
+  if(f.email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email))return {msg:'That email address looks incomplete.',field:'f-email'};
+  if(f.gst&&!GST_RE.test(f.gst))return {msg:'A GST number has 15 characters, like 27ABCDE1234F1Z5. Fix it or leave it blank.',field:'f-gst'};
+  return null;
+}
+$('#form').addEventListener('submit',async function(e){
+  e.preventDefault();
+  if(!state.db)return;
+  var f=readForm(),err=validate(f);
+  if(err){$('#form-error').textContent=err.msg;$('#'+err.field).focus();return;}
+  var btn=$('#form-save');btn.disabled=true;btn.textContent='Saving…';$('#form-error').textContent='';
+  try{
+    var up=await uploadPending(state.pendV);
+    if(up.failed.length){
+      up.docs.forEach(function(d){state.as.delete(d.id).catch(function(){});});
+      btn.disabled=false;btn.textContent='Save vendor';
+      $('#form-error').textContent='Could not attach: '+up.failed.join(', ')+'. Remove it or try again.';return;
+    }
+    if(state.editingId){
+      var cur=byId(state.editingId);
+      f.docs=((cur&&cur.docs)||[]).concat(up.docs);f.updatedAt=Date.now();
+      await state.db.doc('vendors/'+state.editingId).update(f);
+      toast('Vendor updated');closeOv('#ov-form');
+    }else{
+      var n=nextVNum(),saved=null;
+      f.docs=up.docs;
+      for(var i=0;i<8&&!saved;i++){
+        var code=fmtCode(n+i),ref=state.db.doc('vendors/'+code),snap=await ref.get();
+        if(!snap.exists){f.code=code;f.createdAt=Date.now();f.updatedAt=f.createdAt;await ref.set(f);saved=code;}
+      }
+      if(!saved)throw new Error('code');
+      toast('Saved as '+saved+(up.docs.length?' with '+up.docs.length+(up.docs.length===1?' document':' documents'):''));closeOv('#ov-form');
+    }
+  }catch(x){
+    btn.disabled=false;btn.textContent='Save vendor';
+    $('#form-error').textContent='Could not save. Try again.';
+  }
+});
+
+/* ---------- project add / edit ---------- */
+function openPForm(id){
+  if(!state.db)return;
+  state.editingPid=id;
+  var p=id?byPid(id):null;
+  $('#pform-title').textContent=p?'Edit project':'Add project';
+  $('#pform-code').textContent=p?(p.code||p.id):'New code: '+fmtPCode(nextPNum())+' (assigned when you save)';
+  setField('p-name',p&&p.name);setField('p-client',p&&p.client);setField('p-location',p&&p.location);
+  setField('p-type',p?(p.type||'Other'):'Residential');setField('p-status',p?(p.status||'Planning'):'Planning');
+  setField('p-start',p&&p.start);setField('p-end',p&&p.end);setField('p-value',p&&p.value);
+  setField('p-scope',p&&p.scope);setField('p-notes',p&&p.notes);
+  setField('p-fee',p&&p.fee);setField('p-feebasis',p?(p.feeBasis||'Fixed fee'):'Fixed fee');setField('p-feenote',p&&p.feeNote);
+  $('#pform-error').textContent='';$('#pform-save').disabled=false;$('#pform-save').textContent='Save project';
+  state.pendP=[];pickerUI($('#pform-attach'),state.pendP);
+  if(p&&(p.docs||[]).length)$('#pform-attach').prepend(h('p',{class:'note',style:'margin:0 0 6px',text:'Already attached: '+p.docs.length+(p.docs.length===1?' document':' documents')+'. Manage them from Details.'}));
+  openOv('#ov-pform','#p-name');
+}
+$('#pform').addEventListener('submit',async function(e){
+  e.preventDefault();
+  if(!state.db)return;
+  function t(id){return $('#'+id).value.trim();}
+  var f={name:t('p-name'),client:t('p-client'),location:t('p-location'),type:$('#p-type').value,status:$('#p-status').value,start:t('p-start'),end:t('p-end'),
+    value:t('p-value')===''?'':Number(t('p-value')),scope:t('p-scope'),notes:t('p-notes'),
+    fee:t('p-fee')===''?'':Number(t('p-fee')),feeBasis:$('#p-feebasis').value,feeNote:t('p-feenote')};
+  var err=null;
+  if(!f.name)err={msg:'Enter the project name.',field:'p-name'};
+  else if(f.value!==''&&!(f.value>=0))err={msg:'Enter the project value as a number.',field:'p-value'};
+  else if(f.fee!==''&&!(f.fee>=0))err={msg:'Enter the fee as a number.',field:'p-fee'};
+  else if(f.fee!==''&&f.feeBasis==='Percentage of project cost'&&f.fee>100)err={msg:'A percentage fee cannot be more than 100.',field:'p-fee'};
+  else if(f.start&&f.end&&f.end<f.start)err={msg:'Target completion is before the start date.',field:'p-end'};
+  if(err){$('#pform-error').textContent=err.msg;$('#'+err.field).focus();return;}
+  var btn=$('#pform-save');btn.disabled=true;btn.textContent='Saving…';$('#pform-error').textContent='';
+  try{
+    var up=await uploadPending(state.pendP);
+    if(up.failed.length){
+      up.docs.forEach(function(d){state.as.delete(d.id).catch(function(){});});
+      btn.disabled=false;btn.textContent='Save project';
+      $('#pform-error').textContent='Could not attach: '+up.failed.join(', ')+'. Remove it or try again.';return;
+    }
+    if(state.editingPid){
+      var cur=byPid(state.editingPid);
+      f.docs=((cur&&cur.docs)||[]).concat(up.docs);f.updatedAt=Date.now();
+      await state.db.doc('projects/'+state.editingPid).update(f);
+      toast('Project updated');closeOv('#ov-pform');
+    }else{
+      var n=nextPNum(),saved=null;f.docs=up.docs;f.shares=[];
+      for(var i=0;i<8&&!saved;i++){
+        var code=fmtPCode(n+i),ref=state.db.doc('projects/'+code),snap=await ref.get();
+        if(!snap.exists){f.code=code;f.createdAt=Date.now();f.updatedAt=f.createdAt;await ref.set(f);saved=code;}
+      }
+      if(!saved)throw new Error('code');
+      toast('Saved as '+saved);closeOv('#ov-pform');
+    }
+  }catch(x){
+    btn.disabled=false;btn.textContent='Save project';
+    $('#pform-error').textContent='Could not save. Try again.';
+  }
+});
+
+/* ---------- project details ---------- */
+function buildPDetail(id){
+  var p=byPid(id);if(!p)return;
+  $('#pdetail-code').textContent=p.code||p.id;
+  $('#pdetail-title').textContent=p.name;
+  var body=$('#pdetail-body');body.replaceChildren();
+  var ft=feeText(p);
+  var shares=(p.shares||[]).slice().sort(function(a,b){return b.at-a.at;});
+  body.append(
+    h('div',{class:'actions',style:'margin-top:0'},h('button',{class:'btn primary',type:'button',onclick:function(){openShare(p.id);}},icon('send'),'Share with vendors')),
+    h('dl',{class:'facts'},
+      fact('Status',p.status||'Planning'),
+      fact('Type',p.type||'Not set'),
+      fact('Client',p.client||'Not set'),
+      fact('Location',p.location||'Not set'),
+      fact('Start',p.start?fmtDay(p.start):'Not set'),
+      fact('Target completion',p.end?fmtDay(p.end):'Not set'),
+      (p.value||p.value===0)&&p.value!==''?fact('Estimated project value',inr(p.value)):null,
+      p.scope?fact('Scope of work',h('span',{style:'white-space:pre-wrap',text:p.scope}),true):null,
+      p.notes?fact('Private notes',h('span',{style:'white-space:pre-wrap',text:p.notes}),true):null,
+      p.createdAt?fact('Added',fmtDate(p.createdAt)):null
+    ),
+    ft?h('div',{class:'group feebox'},h('h3',{text:'Fee for our services'}),h('p',{style:'font-weight:600',text:ft}),p.feeNote?h('p',{class:'meta',text:p.feeNote}):null):null,
+    h('div',{class:'sec'},h('h3',{text:'Shared with'}),
+      shares.length?h('div',null,shares.map(function(s){var v=byId(s.v);return h('p',{class:'meta',style:'color:var(--ink)',text:(v?v.code+' '+v.name:'Deleted vendor')+' · '+s.ch+' · '+fmtDate(s.at)});}),
+        h('p',{class:'note',text:'Recorded when you tapped the WhatsApp or Email button. It does not confirm the message was sent or read.'})):h('p',{class:'note',style:'margin:0',text:'Not shared with any vendor yet.'})),
+    h('div',{class:'sec'},h('h3',{text:'Documents'}),h('div',{id:'pdocs-box'})),
+    h('div',{class:'sec',id:'padmin-row'},h('div',{class:'sheet-foot',style:'margin-top:0;justify-content:space-between'},
+      h('button',{class:'btn danger',type:'button',onclick:function(){askPDelete(p);}},'Delete project'),
+      h('button',{class:'btn ghost',type:'button',onclick:function(){closeOv('#ov-pdetail');openPForm(p.id);}},'Edit project')))
+  );
+  renderDocs(p,'projects');
+}
+function openPDetail(id){
+  if(!byPid(id))return;
+  state.pDetailId=id;buildPDetail(id);openOv('#ov-pdetail');
+}
+function askPDelete(p){
+  var row=$('#padmin-row');row.replaceChildren(
+    h('p',{style:'margin-bottom:10px',text:'Delete '+p.code+' ('+p.name+') permanently, with its '+(p.docs||[]).length+' attached documents? This cannot be undone.'}),
+    h('div',{class:'confirm'},
+      h('button',{class:'btn ghost',type:'button',onclick:function(){buildPDetail(p.id);}},'Keep project'),
+      h('button',{class:'btn danger',type:'button',onclick:function(){doPDelete(p);}},'Yes, delete')));
+}
+async function doPDelete(p){
+  try{
+    await state.db.doc('projects/'+p.id).delete();closeOv('#ov-pdetail');toast(p.code+' deleted');
+    if(state.as)(p.docs||[]).forEach(function(d){state.as.delete(d.id).catch(function(){});});
+  }catch(e){toast('Could not delete. Try again.');}
+}
+
+/* ---------- share project with vendors ---------- */
+var share={pid:null,sel:{},q:'',cat:'all',opts:{client:false,value:false,fee:false},intro:'',subject:'',att:{}};
+function projectLines(p,o){
+  var L=[];
+  L.push('Project: '+p.name+(p.code?' ('+p.code+')':''));
+  if(o.client&&p.client)L.push('Client: '+p.client);
+  if(p.location)L.push('Location: '+p.location);
+  if(p.type)L.push('Type: '+p.type);
+  if(p.start)L.push('Start: '+fmtDay(p.start));
+  if(p.end)L.push('Target completion: '+fmtDay(p.end));
+  if(o.value&&(p.value||p.value===0)&&p.value!=='')L.push('Estimated project value: '+inr(p.value));
+  if(p.scope)L.push('\nScope of work:\n'+p.scope);
+  var ft=feeText(p);
+  if(o.fee&&ft)L.push('\nOur fee: '+ft+(p.feeNote?' ('+p.feeNote+')':''));
+  return L.join('\n');
+}
+function messageFor(p,v){return 'Hello '+who(v)+',\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\nThank you.';}
+function openShare(pid){
+  var p=byPid(pid);if(!p)return;
+  share.pid=pid;share.sel={};share.q='';share.cat='all';share.opts={client:false,value:false,fee:false};
+  share.intro=(state.me?'This is '+state.me+'. ':'')+'We are inviting you to quote for the project below. Please review the details and reply with your best rates and earliest availability.';
+  share.subject='Project enquiry: '+p.name+(p.code?' ('+p.code+')':'');
+  share.att={};(p.docs||[]).forEach(function(d){share.att[d.id]=true;});
+  buildShare();openOv('#ov-share','#sh-intro');
+}
+async function markShared(pid,vids,ch){
+  var cur=byPid(pid);if(!cur)return;
+  var sh=(cur.shares||[]).filter(function(s){return vids.indexOf(s.v)<0;});
+  vids.forEach(function(v){sh.push({v:v,ch:ch,at:Date.now()});});
+  try{await state.db.doc('projects/'+pid).update({shares:sh});}catch(e){}
+}
+function buildShare(){
+  var p=byPid(share.pid);if(!p)return;
+  $('#share-title').textContent='Share '+(p.code||'project');
+  var body=$('#share-body');body.replaceChildren();
+  var intro=h('textarea',{id:'sh-intro','aria-label':'Message'});intro.value=share.intro;
+  var subject=h('input',{id:'sh-subject',type:'text','aria-label':'Email subject'});subject.value=share.subject;
+  var preview=h('pre',{class:'preview'});
+  var listBox=h('div',{class:'pick'});
+  var sendBox=h('div');
+  function optRow(key,label,disabled){
+    var cb=h('input',{type:'checkbox',id:'sh-o-'+key});cb.checked=!!share.opts[key];if(disabled)cb.disabled=true;
+    cb.addEventListener('change',function(){share.opts[key]=cb.checked;refresh();});
+    return h('label',{class:'checkrow',for:'sh-o-'+key},cb,label);
+  }
+  function refresh(){
+    var sample=state.vendors.length?state.vendors[0]:{name:'[vendor]'};
+    preview.textContent='Hello [contact name],\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\nThank you.';
+    renderSend();
+  }
+  function renderList(){
+    listBox.replaceChildren();
+    var q=share.q.toLowerCase().split(/\s+/).filter(Boolean);
+    var rows=state.vendors.filter(function(v){
+      if(v.status==='Do not use')return false;
+      if(share.cat!=='all'&&(v.category||'Uncategorised')!==share.cat)return false;
+      var hay=[v.code,v.name,v.contact,v.category,v.city].join(' ').toLowerCase();
+      for(var i=0;i<q.length;i++)if(hay.indexOf(q[i])<0)return false;
+      return true;
+    }).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+    if(!rows.length)listBox.append(h('p',{class:'note',style:'padding:10px',text:'No vendors match.'}));
+    rows.forEach(function(v){
+      var cb=h('input',{type:'checkbox',id:'sh-v-'+v.id});cb.checked=!!share.sel[v.id];
+      cb.addEventListener('change',function(){if(cb.checked)share.sel[v.id]=true;else delete share.sel[v.id];renderSend();});
+      listBox.append(h('label',{class:'pickrow',for:'sh-v-'+v.id},cb,h('span',{style:'min-width:0'},
+        h('span',{style:'font-weight:600;overflow-wrap:anywhere',text:v.name}),h('br'),
+        h('span',{class:'meta',text:[v.code,v.category,v.email?'':'no email saved'].filter(Boolean).join(' · ')}))));
+    });
+    return rows;
+  }
+  function renderSend(){
+    sendBox.replaceChildren();
+    var chosen=state.vendors.filter(function(v){return share.sel[v.id];});
+    if(!chosen.length){sendBox.append(h('p',{class:'note',text:'Tick the vendors above to get their WhatsApp and Email buttons.'}));return;}
+    var subj=share.subject||share.subject;
+    var withMail=chosen.filter(function(v){return v.email;});
+    chosen.forEach(function(v){
+      var msg=messageFor(p,v);
+      sendBox.append(h('div',{class:'sendrow'},
+        h('span',{style:'min-width:0;overflow-wrap:anywhere',text:v.name}),
+        h('div',{class:'btns'},
+          h('a',{class:'btn wa sm',href:waHref(v,msg),target:'_blank',rel:'noopener',onclick:function(){markShared(p.id,[v.id],'WhatsApp');}},icon('chat'),'WhatsApp'),
+          v.email?h('a',{class:'btn call sm',href:mailto(v.email,subj,msg),onclick:function(){markShared(p.id,[v.id],'Email');}},icon('mail'),'Email'):h('span',{class:'meta',text:'No email saved'}))));
+    });
+    var tools=h('div',{class:'toolrow'});
+    if(withMail.length>1){
+      var all='Hello,\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\nThank you.';
+      tools.append(h('a',{class:'btn call',href:mailto('',subj,all,withMail.map(function(v){return v.email;}).join(',')),onclick:function(){markShared(p.id,withMail.map(function(v){return v.id;}),'Email');}},icon('mail'),'Email all '+withMail.length+' at once (hidden recipients)'));
+    }
+    sendBox.append(tools);
+    sendBox.append(h('p',{class:'note',text:'Each button opens WhatsApp or your email app with the message ready. You press send there.'}));
+  }
+  var attBox=h('div');
+  var docs=p.docs||[];
+  if(docs.length){
+    attBox.append(h('h3',{style:'font:700 15px var(--font-head);margin:14px 0 4px',text:'Attachments'}));
+    docs.forEach(function(d){
+      var cb=h('input',{type:'checkbox',id:'sh-a-'+d.id});cb.checked=!!share.att[d.id];
+      cb.addEventListener('change',function(){share.att[d.id]=cb.checked;});
+      attBox.append(h('label',{class:'checkrow',for:'sh-a-'+d.id},cb,h('span',{style:'overflow-wrap:anywhere',text:d.name+' ('+fmtSize(d.size)+')'})));
+    });
+    var sb=h('button',{class:'btn ghost',type:'button',style:'margin-top:6px'},icon('send'),'Share selected files (choose email or WhatsApp app)');
+    sb.addEventListener('click',function(){shareFiles(p);});
+    attBox.append(sb,h('p',{class:'note',text:'Email and WhatsApp links cannot carry attachments. This button opens your phone’s share sheet with the files, where you pick the app and the recipients.'}));
+  }
+  intro.addEventListener('input',function(){share.intro=intro.value;refresh();});
+  subject.addEventListener('input',function(){share.subject=subject.value;renderSend();});
+  var qIn=h('input',{type:'text',placeholder:'Search vendors','aria-label':'Search vendors to share with',autocomplete:'off'});
+  qIn.addEventListener('input',function(){share.q=qIn.value;renderList();});
+  var catSel=h('select',{'aria-label':'Filter vendors by category'});
+  var cats={};state.vendors.forEach(function(v){cats[v.category||'Uncategorised']=1;});
+  catSel.append(h('option',{value:'all',text:'All categories'}));
+  Object.keys(cats).sort().forEach(function(c){catSel.append(h('option',{value:c,text:c}));});
+  catSel.addEventListener('change',function(){share.cat=catSel.value;renderList();});
+  var selShown=h('button',{class:'btn ghost sm',type:'button'},'Tick all shown');
+  selShown.addEventListener('click',function(){var rows=renderList();rows.forEach(function(v){share.sel[v.id]=true;});renderList();renderSend();});
+  var clear=h('button',{class:'btn ghost sm',type:'button'},'Clear ticks');
+  clear.addEventListener('click',function(){share.sel={};renderList();renderSend();});
+
+  body.append(
+    h('div',{class:'field'},h('label',{for:'sh-intro',text:'Message'}),intro),
+    h('div',{class:'field',style:'margin-top:10px'},h('label',{for:'sh-subject',text:'Email subject'}),subject),
+    h('div',{style:'margin-top:10px'},
+      optRow('client','Include client name'),
+      optRow('value','Include estimated project value'),
+      optRow('fee','Include our fee'+(feeText(p)?' ('+feeText(p)+')':' (no fee entered)'),!feeText(p))),
+    h('h3',{style:'font:700 15px var(--font-head);margin:14px 0 6px',text:'What vendors will see'}),preview,
+    attBox,
+    h('div',{class:'sec'},h('h3',{text:'Choose vendors'}),
+      h('div',{class:'search-row'},h('div',{class:'search'},qIn),h('div',{class:'sort'},catSel)),
+      h('div',{class:'toolrow'},selShown,clear),listBox),
+    h('div',{class:'sec'},h('h3',{text:'Send'}),sendBox)
+  );
+  renderList();refresh();
+}
+async function shareFiles(p){
+  var chosen=(p.docs||[]).filter(function(d){return share.att[d.id];});
+  if(!chosen.length){toast('Tick at least one attachment first.');return;}
+  try{
+    var files=[];
+    for(var i=0;i<chosen.length;i++){var rec=await state.as.get(chosen[i].id);if(rec)files.push(new File([rec.blob],chosen[i].name,{type:rec.type||'application/octet-stream'}));}
+    if(!(navigator.canShare&&navigator.canShare({files:files}))){toast('This phone cannot share these files from the app. Tap Save on each document under Details, then attach them in your email app.');return;}
+    await navigator.share({files:files,title:share.subject,text:share.intro+'\n\n'+projectLines(p,share.opts)});
+  }catch(e){if(!e||e.name!=='AbortError')toast('Sharing did not start. Try Save on the document, then attach it in your email app.');}
+}
+
+/* ---------- More: profile, import, export ---------- */
+$('#btn-more').addEventListener('click',function(){
+  $('#f-me').value=state.me;
+  $('#btn-install').hidden=!deferredInstall;
+  openOv('#ov-more');
+});
+$('#save-me').addEventListener('click',async function(){
+  var name=$('#f-me').value.trim();
+  try{await state.db.doc('settings/profile').set({name:name});toast('Name saved');}catch(e){toast('Could not save your name.');}
+});
+function csvCell(s){s=String(s==null?'':s);return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+async function saveCsv(name,text){
+  try{await state.dl.save({filename:name,data:'﻿'+text});toast('Saved to your Downloads');}
+  catch(e){toast('Could not create the file.');}
+}
+$('#btn-export').addEventListener('click',function(){
+  var rows=[['Code','Company','Category','Contact person','Phone','WhatsApp','Email','City','GST','Rating','Status','Notes','Added'].join(',')];
+  vSorted(state.vendors).forEach(function(v){rows.push([v.code,v.name,v.category,v.contact,v.phone,v.waPhone,v.email,v.city,v.gst,v.rating||'',v.status,v.notes,fmtDate(v.createdAt)].map(csvCell).join(','));});
+  saveCsv('vendors-'+new Date().toISOString().slice(0,10)+'.csv',rows.join('\r\n'));
+});
+$('#btn-export-p').addEventListener('click',function(){
+  var rows=[['Code','Project','Client','Location','Type','Status','Start','Target completion','Project value','Our fee','Fee basis','Fee notes','Scope'].join(',')];
+  pSorted(state.projects).forEach(function(p){rows.push([p.code,p.name,p.client,p.location,p.type,p.status,p.start,p.end,p.value,p.fee,p.feeBasis,p.feeNote,p.scope].map(csvCell).join(','));});
+  saveCsv('projects-'+new Date().toISOString().slice(0,10)+'.csv',rows.join('\r\n'));
+});
+$('#btn-template').addEventListener('click',function(){saveCsv('vendor-import-template.csv',['Company','Category','Contact person','Phone','WhatsApp','Email','City','GST','Rating','Status','Notes'].join(',')+'\r\n');});
+$('#btn-import').addEventListener('click',function(){$('#file-import').click();});
+function parseCsv(t){
+  t=t.replace(/^﻿/,'');var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<t.length;i++){var c=t.charAt(i);
+    if(q){if(c==='"'){if(t.charAt(i+1)==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else if(c==='"')q=true;
+    else if(c===','){row.push(cur);cur='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t.charAt(i+1)==='\n')i++;row.push(cur);cur='';if(row.some(function(x){return x.trim()!=='';}))rows.push(row);row=[];}
+    else cur+=c;}
+  row.push(cur);if(row.some(function(x){return x.trim()!=='';}))rows.push(row);return rows;
+}
+var HMAP={company:'name',companyname:'name',name:'name',vendor:'name',vendorname:'name',category:'category',trade:'category',type:'category',contact:'contact',contactperson:'contact',person:'contact',phone:'phone',mobile:'phone',mobileno:'phone',phonenumber:'phone',contactnumber:'phone',tel:'phone',whatsapp:'waPhone',wa:'waPhone',email:'email',emailid:'email',city:'city',area:'city',location:'city',gst:'gst',gstin:'gst',gstno:'gst',gstnumber:'gst',rating:'rating',status:'status',notes:'notes',remarks:'notes'};
+$('#file-import').addEventListener('change',async function(){
+  var file=this.files&&this.files[0];this.value='';if(!file||!state.db)return;
+  try{
+    var rows=parseCsv(await file.text());
+    if(rows.length<2){toast('That file has no vendor rows.');return;}
+    var cols=rows[0].map(function(x){return HMAP[x.toLowerCase().replace(/[^a-z]/g,'')]||null;});
+    if(cols.indexOf('name')<0||cols.indexOf('phone')<0){toast('The first row needs Company and Phone columns.');return;}
+    if(rows.length-1>500){toast('Import up to 500 vendors at a time.');return;}
+    var n=nextVNum(),added=0,dupes=0,bad=0,seen={};
+    state.vendors.forEach(function(v){seen[waNum(v.phone)]=1;});
+    closeOv('#ov-more');toast('Importing…');
+    for(var r=1;r<rows.length;r++){
+      var o={};cols.forEach(function(k,i){if(k)o[k]=(rows[r][i]||'').trim();});
+      if(!o.name||digits(o.phone).length<10){bad++;continue;}
+      var key=waNum(o.phone);if(seen[key]){dupes++;continue;}seen[key]=1;
+      var rt=parseInt(o.rating,10);
+      var rec={name:o.name,category:o.category||'',contact:o.contact||'',phone:o.phone,waPhone:o.waPhone||'',email:o.email||'',city:o.city||'',gst:(o.gst||'').toUpperCase(),rating:rt>=1&&rt<=5?rt:0,status:['Active','On hold','Do not use'].indexOf(o.status)>=0?o.status:'Active',notes:o.notes||'',docs:[],code:fmtCode(n),createdAt:Date.now(),updatedAt:Date.now()};
+      await state.db.doc('vendors/'+rec.code).set(rec);n++;added++;
+    }
+    toast('Imported '+added+(dupes?', '+dupes+' already listed':'')+(bad?', '+bad+' skipped (missing name or phone)':''));
+  }catch(x){toast('Import stopped. Check the file and try again.');}
+});
+
+/* ---------- search, sort ---------- */
+$('#q').addEventListener('input',function(){if(state.tab==='vendors')state.qV=this.value.trim();else state.qP=this.value.trim();render();});
+$('#sort').addEventListener('change',function(){if(state.tab==='vendors')state.sortV=this.value;else state.sortP=this.value;render();});
+$('#btn-add').addEventListener('click',function(){if(state.tab==='vendors')openForm(null);else openPForm(null);});
+var dl=$('#cat-list');CATS.forEach(function(c){dl.append(h('option',{value:c}));});
+
+/* ---------- on-phone storage (IndexedDB) ---------- */
+var idb=null;
+function openDb(){return new Promise(function(res,rej){
+  var r=indexedDB.open('vendor-desk',2);
+  r.onupgradeneeded=function(){
+    var d=r.result;
+    ['vendors','files','meta','projects'].forEach(function(s){if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});});
+  };
+  r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};
+});}
+function tx(store,mode,fn){return new Promise(function(res,rej){
+  var t=idb.transaction(store,mode),req=fn(t.objectStore(store));
+  t.oncomplete=function(){res(req?req.result:undefined);};
+  t.onerror=function(){rej(t.error);};t.onabort=function(){rej(t.error);};
+});}
+function makeDb(){
+  var listeners={vendors:[],projects:[]},docListeners={};
+  function parse(path){var a=path.split('/');return {store:a[0]==='settings'?'meta':a[0],id:a[1]};}
+  function snapOf(v,id){return {id:id,exists:!!v,data:function(){return v;}};}
+  async function pushColl(store){
+    var all=await tx(store,'readonly',function(s){return s.getAll();});
+    var snap={docs:all.map(function(v){return snapOf(v,v.id);})};
+    listeners[store].forEach(function(f){f(snap);});
+  }
+  async function pushDoc(p){
+    var v=await tx(p.store,'readonly',function(s){return s.get(p.id);});
+    (docListeners[p.store+'/'+p.id]||[]).forEach(function(f){f(snapOf(v,p.id));});
+  }
+  function after(p){return listeners[p.store]?pushColl(p.store):pushDoc(p);}
+  return {
+    doc:function(path){var p=parse(path);return {
+      get:async function(){var v=await tx(p.store,'readonly',function(s){return s.get(p.id);});return snapOf(v,p.id);},
+      set:async function(d){var o=Object.assign({},d);o.id=p.id;await tx(p.store,'readwrite',function(s){return s.put(o);});await after(p);},
+      update:async function(d){
+        var cur=await tx(p.store,'readonly',function(s){return s.get(p.id);});
+        if(!cur)throw new Error('missing');
+        var o=Object.assign({},cur,d);o.id=p.id;
+        await tx(p.store,'readwrite',function(s){return s.put(o);});await after(p);
+      },
+      delete:async function(){await tx(p.store,'readwrite',function(s){return s.delete(p.id);});await after(p);},
+      onSnapshot:function(next){var k=p.store+'/'+p.id;(docListeners[k]=docListeners[k]||[]).push(next);pushDoc(p);}
+    };},
+    collection:function(name){return {onSnapshot:function(next){listeners[name].push(next);pushColl(name);}};},
+    refreshAll:async function(){await pushColl('vendors');await pushColl('projects');await pushDoc({store:'meta',id:'profile'});}
+  };
+}
+function makeAssets(){return {
+  upload:async function(file,opts){
+    var id=(window.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2)).replace(/-/g,'');
+    var type=(opts&&opts.type)||file.type||'application/octet-stream';
+    await tx('files','readwrite',function(s){return s.put({id:id,name:file.name,type:type,blob:file});});
+    return {id:id,sizeBytes:file.size,contentType:type};
+  },
+  get:function(id){return tx('files','readonly',function(s){return s.get(id);});},
+  delete:async function(id){await tx('files','readwrite',function(s){return s.delete(id);});return {deleted:true};}
+};}
+function makeDl(){return {save:async function(o){
+  var type=/\.json$/i.test(o.filename)?'application/json':'text/csv;charset=utf-8';
+  var blob=o.data instanceof Blob?o.data:new Blob([o.data],{type:type});
+  var url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=o.filename;document.body.append(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},60000);
+  return {status:'saved'};
+}};}
+
+/* ---------- backup and restore ---------- */
+function blobToDataUrl(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=function(){rej(r.error);};r.readAsDataURL(b);});}
+$('#btn-backup').addEventListener('click',async function(){
+  try{
+    toast('Preparing backup…');
+    var vendors=await tx('vendors','readonly',function(s){return s.getAll();});
+    var projects=await tx('projects','readonly',function(s){return s.getAll();});
+    var meta=await tx('meta','readonly',function(s){return s.getAll();});
+    var files=await tx('files','readonly',function(s){return s.getAll();});
+    var out=[];
+    for(var i=0;i<files.length;i++)out.push({id:files[i].id,name:files[i].name,type:files[i].type,data:await blobToDataUrl(files[i].blob)});
+    var json=JSON.stringify({app:'vendor-desk',version:2,savedAt:Date.now(),vendors:vendors,projects:projects,meta:meta,files:out});
+    await state.dl.save({filename:'mi-app-backup-'+new Date().toISOString().slice(0,10)+'.json',data:json});
+    toast('Backup saved to your Downloads');
+  }catch(e){toast('Could not create the backup.');}
+});
+$('#btn-restore').addEventListener('click',function(){$('#file-restore').click();});
+$('#file-restore').addEventListener('change',async function(){
+  var f=this.files&&this.files[0];this.value='';if(!f||!idb)return;
+  try{
+    var b=JSON.parse(await f.text());
+    if(b.app!=='vendor-desk')throw new Error('format');
+    toast('Restoring…');
+    for(var i=0;i<(b.files||[]).length;i++){
+      var x=b.files[i],blob=await (await fetch(x.data)).blob();
+      await tx('files','readwrite',function(s){return s.put({id:x.id,name:x.name,type:x.type,blob:blob});});
+    }
+    for(var j=0;j<(b.vendors||[]).length;j++){var v=b.vendors[j];await tx('vendors','readwrite',function(s){return s.put(v);});}
+    for(var k=0;k<(b.projects||[]).length;k++){var pr=b.projects[k];await tx('projects','readwrite',function(s){return s.put(pr);});}
+    for(var m=0;m<(b.meta||[]).length;m++){var mt=b.meta[m];await tx('meta','readwrite',function(s){return s.put(mt);});}
+    await state.db.refreshAll();
+    closeOv('#ov-more');
+    toast('Restored '+(b.vendors||[]).length+' vendors and '+(b.projects||[]).length+' projects');
+  }catch(e){toast('That is not an MI App backup file.');}
+});
+
+/* ---------- install and offline ---------- */
+var deferredInstall=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstall=e;});
+$('#btn-install').addEventListener('click',async function(){
+  if(!deferredInstall)return;
+  deferredInstall.prompt();
+  try{await deferredInstall.userChoice;}catch(e){}
+  deferredInstall=null;closeOv('#ov-more');
+});
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+
+/* ---------- boot ---------- */
+setTab('vendors');
+(async function(){
+  try{idb=await openDb();}catch(e){state.dbChecked=true;render();return;}
+  state.db=makeDb();state.dl=makeDl();state.as=makeAssets();state.dbChecked=true;
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+  render();
+  state.db.collection('vendors').onSnapshot(function(snap){
+    state.vendors=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;if(!o.code)o.code=d.id;return o;});
+    state.vLoaded=true;
+    if(state.detailId&&!byId(state.detailId)){closeOv('#ov-detail');}
+    else if(state.detailId){renderDocs(byId(state.detailId),'vendors');}
+    render();
+  });
+  state.db.collection('projects').onSnapshot(function(snap){
+    state.projects=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;if(!o.code)o.code=d.id;return o;});
+    state.pLoaded=true;
+    if(state.pDetailId&&!byPid(state.pDetailId)){closeOv('#ov-pdetail');}
+    else if(state.pDetailId){buildPDetail(state.pDetailId);}
+    render();
+  });
+  state.db.doc('settings/profile').onSnapshot(function(s){var d=s.exists?s.data():null;state.me=d&&d.name?d.name:'';});
+})();
+})();
+</script>
+</body>
+</html>
