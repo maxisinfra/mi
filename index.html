@@ -944,7 +944,7 @@ async function doPDelete(p){
 }
 
 /* ---------- share project with vendors ---------- */
-var share={pid:null,sel:{},q:'',cat:'all',opts:{client:false,value:false,fee:false},intro:'',subject:'',att:{}};
+var share={pid:null,mode:'quote',sel:{},q:'',cat:'all',opts:{client:false,value:false,fee:false},intro:'',subject:'',att:{}};
 function projectLines(p,o){
   var L=[];
   L.push('Project: '+p.name+(p.code?' ('+p.code+')':''));
@@ -959,12 +959,20 @@ function projectLines(p,o){
   if(o.fee&&ft)L.push('\nOur fee: '+ft+(p.feeNote?' ('+p.feeNote+')':''));
   return L.join('\n');
 }
-function messageFor(p,v){return 'Hello '+who(v)+',\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\nThank you.';}
+function introFor(mode){
+  var me=state.me?'This is '+state.me+'. ':'';
+  return mode==='sub'
+    ? me+'We would like to offer you a sub-contract on the project below. Please review the details and confirm your interest and earliest availability. No rates or quotation are needed.'
+    : me+'We are inviting you to quote for the project below. Please review the details and reply with your best rates and earliest availability.';
+}
+function subjectFor(p,mode){return (mode==='sub'?'Sub-contract opportunity: ':'Project enquiry: ')+p.name+(p.code?' ('+p.code+')':'');}
+function closingFor(){return share.mode==='sub'?'Please reply to confirm. Thank you.':'Thank you.';}
+function messageFor(p,v){return 'Hello '+who(v)+',\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\n'+closingFor();}
 function openShare(pid){
   var p=byPid(pid);if(!p)return;
-  share.pid=pid;share.sel={};share.q='';share.cat='all';share.opts={client:false,value:false,fee:false};
-  share.intro=(state.me?'This is '+state.me+'. ':'')+'We are inviting you to quote for the project below. Please review the details and reply with your best rates and earliest availability.';
-  share.subject='Project enquiry: '+p.name+(p.code?' ('+p.code+')':'');
+  share.pid=pid;share.mode='quote';share.sel={};share.q='';share.cat='all';share.opts={client:false,value:false,fee:false};
+  share.intro=introFor('quote');
+  share.subject=subjectFor(p,'quote');
   share.att={};(p.docs||[]).forEach(function(d){share.att[d.id]=true;});
   buildShare();openOv('#ov-share','#sh-intro');
 }
@@ -990,7 +998,7 @@ function buildShare(){
   }
   function refresh(){
     var sample=state.vendors.length?state.vendors[0]:{name:'[vendor]'};
-    preview.textContent='Hello [contact name],\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\nThank you.';
+    preview.textContent='Hello [contact name],\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\n'+closingFor();
     renderSend();
   }
   function renderList(){
@@ -1029,7 +1037,7 @@ function buildShare(){
     });
     var tools=h('div',{class:'toolrow'});
     if(withMail.length>1){
-      var all='Hello,\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\nThank you.';
+      var all='Hello,\n'+share.intro+'\n\n'+projectLines(p,share.opts)+'\n\n'+closingFor();
       tools.append(h('a',{class:'btn call',href:mailto('',subj,all,withMail.map(function(v){return v.email;}).join(',')),onclick:function(){markShared(p.id,withMail.map(function(v){return v.id;}),'Email');}},icon('mail'),'Email all '+withMail.length+' at once (hidden recipients)'));
     }
     sendBox.append(tools);
@@ -1048,6 +1056,16 @@ function buildShare(){
     sb.addEventListener('click',function(){shareFiles(p);});
     attBox.append(sb,h('p',{class:'note',text:'Email and WhatsApp links cannot carry attachments. This button opens your phone’s share sheet with the files, where you pick the app and the recipients.'}));
   }
+  var modeRow=h('div',null,h('h3',{style:'font:700 15px var(--font-head);margin:0 0 6px',text:'Type of message'}),h('div',{class:'tpl'}));
+  [['quote','Quotation required'],['sub','Sub-contract (no rates)']].forEach(function(m){
+    var b=h('button',{class:'chip',type:'button','aria-pressed':share.mode===m[0]?'true':'false',onclick:function(){
+      share.mode=m[0];share.intro=introFor(m[0]);share.subject=subjectFor(p,m[0]);
+      intro.value=share.intro;subject.value=share.subject;
+      [].forEach.call(modeRow.querySelectorAll('.chip'),function(c){c.setAttribute('aria-pressed',c===b?'true':'false');});
+      refresh();
+    }},m[1]);
+    modeRow.lastChild.append(b);
+  });
   intro.addEventListener('input',function(){share.intro=intro.value;refresh();});
   subject.addEventListener('input',function(){share.subject=subject.value;renderSend();});
   var qIn=h('input',{type:'text',placeholder:'Search vendors','aria-label':'Search vendors to share with',autocomplete:'off'});
@@ -1063,7 +1081,8 @@ function buildShare(){
   clear.addEventListener('click',function(){share.sel={};renderList();renderSend();});
 
   body.append(
-    h('div',{class:'field'},h('label',{for:'sh-intro',text:'Message'}),intro),
+    modeRow,
+    h('div',{class:'field'},h('label',{for:'sh-intro',text:'Message (you can edit it)'}),intro),
     h('div',{class:'field',style:'margin-top:10px'},h('label',{for:'sh-subject',text:'Email subject'}),subject),
     h('div',{style:'margin-top:10px'},
       optRow('client','Include client name'),
