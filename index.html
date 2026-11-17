@@ -175,7 +175,9 @@ details.pv pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 ui-mono
 'use strict';
 
 /* ================= basics ================= */
-var CFG=(window.MICS_FIREBASE&&window.MICS_FIREBASE.apiKey&&String(window.MICS_FIREBASE.apiKey).indexOf('PASTE')<0)?window.MICS_FIREBASE:null;
+function okCfg(c){return c&&c.apiKey&&c.projectId&&String(c.apiKey).indexOf('PASTE')<0&&String(c.projectId).indexOf('PASTE')<0?c:null;}
+var SAVED=null;try{SAVED=JSON.parse(localStorage.getItem('mics_cfg')||'null');}catch(e){}
+var CFG=okCfg(SAVED)||okCfg(window.MICS_FIREBASE);
 var COLLS=['vendors','projects','log','meta'];
 var S={vendors:[],projects:[],log:[],meta:[],user:null,authKnown:false,ready:false,pending:false,online:navigator.onLine!==false,sdkFail:false,err:'',mode:CFG?'cloud':'local'};
 var B=null;           /* storage backend (local or cloud) */
@@ -1003,13 +1005,21 @@ function vMore(){
       toast('Imported '+added+(dupes?', skipped '+dupes+' duplicates':'')+(bad?', '+bad+' rows missing name or phone':''));
     })['catch'](function(e){toast(e.message==='cols'?'The file needs at least Company and Phone columns.':'Could not read that CSV file.');});
   });
+  var cfgBox=h('textarea',{placeholder:'Paste the Firebase config here',style:'min-height:120px'});
   var acct=S.mode==='cloud'
     ?h('div',{class:'panel'},h('div',{class:'sec',text:'Account'}),
         h('p',{style:'overflow-wrap:anywhere',text:S.user&&S.user.email||''}),syncChip(),
         S.err?h('p',{class:'err',text:S.err}):h('p',{class:'note',text:'Everything you add syncs to this Google account. Sign in with it on any phone to see the same data.'}),
-        h('button',{class:'btn',type:'button',onclick:function(){B.signOut().then(function(){go('');});}},'Sign out'))
-    :h('div',{class:'panel'},h('div',{class:'sec',text:'Storage'}),syncChip(),
-        h('p',{class:'note',text:'Google sign-in is not set up yet, so data is saved on this phone only. Follow the setup steps to turn on sync, then use Back up and Restore to bring this data across.'}));
+        h('button',{class:'btn',type:'button',onclick:function(){B.signOut().then(function(){go('');});}},'Sign out'),SAVED?h('button',{class:'btn ghost',type:'button',onclick:function(){try{localStorage.removeItem('mics_cfg');}catch(e){}location.reload();}},'Remove pasted Firebase config'):null)
+    :h('div',{class:'panel'},h('div',{class:'sec',text:'Turn on Google sign-in'}),syncChip(),
+        h('p',{class:'note',text:'Sign-in is not set up yet, so data is saved on this phone only. In Firebase, open Project settings, Your apps, and copy the whole config block (it starts with const firebaseConfig = {). Paste it here.'}),
+        cfgBox,
+        h('button',{class:'btn pri',type:'button',onclick:function(){
+          var t=cfgBox.value,c={};
+          ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'].forEach(function(k){var m=new RegExp(k+'\\s*:\\s*[\\x22\\x27]([^\\x22\\x27]+)[\\x22\\x27]').exec(t);if(m)c[k]=m[1];});
+          if(!okCfg(c)){toast('Could not find apiKey and projectId in that text. Paste the whole block.');return;}
+          try{localStorage.setItem('mics_cfg',JSON.stringify(c));}catch(e){toast('This browser blocked saving.');return;}
+          location.reload();}},'Save and turn on sign-in'));
   return [bar('More','',null),
     h('div',{class:'page'},acct,
       h('div',{class:'panel'},h('div',{class:'sec',text:'Your name'}),
