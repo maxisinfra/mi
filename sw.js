@@ -1,9 +1,11 @@
-/* MI App service worker: keeps the app working offline. Vendor data lives in the phone's own storage, not here. */
-var CACHE = 'mi-app-v3';
-var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+/* MICS service worker: keeps the app opening offline. Your data is in your Google account (or this phone), not here. */
+var CACHE = 'mics-v1';
+var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); }));
+  }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener('activate', function (e) {
@@ -18,21 +20,26 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
+  var same = url.origin === location.origin;
 
-  // Page loads: try the network first so updates arrive, fall back to the saved copy offline.
-  if (req.mode === 'navigate') {
+  /* Our own files: network first so updates arrive, saved copy when offline. */
+  if (same) {
     e.respondWith(
       fetch(req).then(function (res) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put('index.html', copy); });
+        if (res && res.status === 200) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req.mode === 'navigate' ? 'index.html' : req, copy); });
+        }
         return res;
-      }).catch(function () { return caches.match('index.html'); })
+      }).catch(function () {
+        return caches.match(req.mode === 'navigate' ? 'index.html' : req).then(function (hit) { return hit || caches.match('index.html'); });
+      })
     );
     return;
   }
 
-  // Everything else (icons, fonts): saved copy first, then network, and save what comes back.
-  if (url.origin === location.origin || url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+  /* Firebase sign-in/database code from Google: saved copy first so the app starts offline. */
+  if (url.hostname === 'www.gstatic.com' && url.pathname.indexOf('/firebasejs/') === 0) {
     e.respondWith(
       caches.match(req).then(function (hit) {
         if (hit) return hit;
