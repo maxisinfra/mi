@@ -1,10 +1,10 @@
 /* MICS service worker: keeps the app opening offline. Your data is in your Google account (or this phone), not here. */
-var CACHE = 'mics-v1';
+var CACHE = 'mics-v2';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
-    return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); }));
+    return Promise.all(SHELL.map(function (u) { return c.add(new Request(u, { cache: 'reload' })).catch(function () {}); }));
   }).then(function () { return self.skipWaiting(); }));
 });
 
@@ -25,7 +25,7 @@ self.addEventListener('fetch', function (e) {
   /* Our own files: network first so updates arrive, saved copy when offline. */
   if (same) {
     e.respondWith(
-      fetch(req).then(function (res) {
+      fetch(req, { cache: 'no-store' }).then(function (res) {
         if (res && res.status === 200) {
           var copy = res.clone();
           caches.open(CACHE).then(function (c) { c.put(req.mode === 'navigate' ? 'index.html' : req, copy); });
