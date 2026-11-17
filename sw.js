@@ -1,6 +1,6 @@
 /* MICS service worker: keeps the app opening offline. Your data is in your Google account (or this phone), not here. */
-var CACHE = 'mics-v2';
-var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+var CACHE = 'mics-v3';
+var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icon-180.png', 'icon-192.png', 'icon-512.png', '7111095.png', 'pro2.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
