@@ -197,6 +197,7 @@ var deferredInstall=null;
 var DOC_LABELS=['Quotation','Work order','Invoice','GST certificate','PAN card','Agreement','Insurance','Licence','Drawing','BOQ','Site photo','Other'];
 var ACCEPT='image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.dwg,.dxf,.zip';
 var VCATS=['Civil contractor','Electrical','Plumbing and sanitary','Steel / TMT supplier','Cement and RMC','Earthwork and excavation','Machinery rental','Labour contractor','Interior and finishing','Architect / consultant','Other'];
+var SRC_TYPES=['Not set','Client (direct)','Existing client','Contractor','Consultant','Architect','Broker / agent','Friend / reference','Other'];
 var REASONS=['Project gone','Expired','Deal done'];
 var ICONS={
   phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
@@ -257,11 +258,28 @@ function nextPNum(){var m=100;S.projects.forEach(function(p){var n=codeNum(p.cod
 function byId(id){for(var i=0;i<S.vendors.length;i++)if(S.vendors[i].id===id)return S.vendors[i];return null;}
 function byPid(id){for(var i=0;i<S.projects.length;i++)if(S.projects[i].id===id)return S.projects[i];return null;}
 function myName(){for(var i=0;i<S.meta.length;i++)if(S.meta[i].id==='profile')return S.meta[i].name||'';return '';}
+function valCr(p){
+  if(p.valueCr!==''&&p.valueCr!=null&&isFinite(Number(p.valueCr)))return Number(p.valueCr);
+  if(p.value!==''&&p.value!=null&&isFinite(Number(p.value)))return Number(p.value)/1e7;
+  return null;
+}
+function trimN(n,d){return String(+Number(n).toFixed(d));}
+function fmtCr(n){return n>=0.01||n===0?'₹'+trimN(n,4)+' Cr':rupeesWords(n*1e7);}
+function rupeesWords(r){
+  if(r>=1e7)return '₹'+trimN(r/1e7,2)+' Cr';
+  if(r>=1e5)return '₹'+trimN(r/1e5,2)+' Lakh';
+  return inr(Math.round(r));
+}
+function feeAmount(p){
+  var v=valCr(p),n=Number(p.fee);
+  if((p.feeBasis||'')!=='Percentage of project cost'||v==null||!isFinite(n)||n<=0)return null;
+  return v*1e7*n/100;
+}
 function feeText(p){
   if(p.fee===''||p.fee==null)return '';
   var n=Number(p.fee);if(!isFinite(n)||n<=0)return '';
   var b=p.feeBasis||'Fixed fee';
-  if(b==='Percentage of project cost')return n+'% of project cost';
+  if(b==='Percentage of project cost'){var a=feeAmount(p);return n+'% of project cost'+(a!=null?', about '+rupeesWords(a):'');}
   if(b==='Monthly retainer')return inr(n)+' per month';
   if(b==='Per site visit')return inr(n)+' per site visit';
   return inr(n)+' fixed fee';
@@ -631,7 +649,7 @@ function vVendorList(mode){
       h('div',{class:'stack'},search,sel),box)];
 }
 function datalist(id,items){return h('datalist',{id:id},items.map(function(x){return h('option',{value:x});}));}
-function docsBox(ds){
+function docsBox(ds,title){
   var wrap=h('div',{class:'fld'}),list=h('div'),label=h('select',{'aria-label':'Document type'},DOC_LABELS.map(function(l){return h('option',{text:l});}));
   var input=h('input',{type:'file',multiple:true,accept:ACCEPT,hidden:true,onchange:function(){
     [].forEach.call(input.files||[],function(f){ds.add.push({file:f,label:label.value});});input.value='';draw();}});
@@ -642,7 +660,7 @@ function docsBox(ds){
     ds.add.forEach(function(it,i){list.append(row(it.file.name,it.label+' · '+fmtSize(it.file.size)+' · will upload on Save',function(){ds.add.splice(i,1);draw();}));});
   }
   draw();
-  wrap.append(h('label',{text:'Documents'}),list,
+  wrap.append(h('label',{text:title||'Documents'}),list,
     h('div',{class:'row2'},label,h('button',{class:'btn',type:'button',onclick:function(){input.click();}},icon('clip',20),'Attach files')),input,
     h('p',{class:'note',text:'Photos, PDF, Word, Excel, CAD and more. Up to '+Math.round(B.maxBytes/1048576)+' MB each. Large photos are shrunk automatically. Saved when you tap Save.'}));
   return wrap;
@@ -749,12 +767,13 @@ function pCard(p,mode){
       else go('projects/view/'+encodeURIComponent(p.id));}},
     h('div',{class:'main'},h('span',{class:'code',text:p.code||p.id}),h('span',{class:'pill',text:p.status||'Planning'}),
       h('div',{class:'t',text:p.name}),sub?h('div',{class:'s',text:sub}):null,
-      h('div',{class:'s',text:[p.type,ns?'shared with '+ns:''].filter(Boolean).join(' · ')})),right);
+      h('div',{class:'s',text:[p.type,ns?'shared with '+ns:''].filter(Boolean).join(' · ')}),
+      p.srcName||(p.srcType&&p.srcType!=='Not set')?h('div',{class:'s',text:'Given by: '+[p.srcName,p.srcType&&p.srcType!=='Not set'?'('+p.srcType+')':''].filter(Boolean).join(' ')}):null),right);
 }
 function vProjectList(mode){
-  var q='',box=h('div',{class:'list'});
+  var q='',src='',box=h('div',{class:'list'});
   function draw(){
-    var t=q.toLowerCase(),rows=S.projects.filter(function(p){return !t||[p.code,p.name,p.client,p.location,p.type].join(' ').toLowerCase().indexOf(t)>=0;}).sort(function(a,b){return codeNum(b.code||b.id)-codeNum(a.code||a.id);});
+    var t=q.toLowerCase(),rows=S.projects.filter(function(p){return (!src||p.srcType===src)&&(!t||[p.code,p.name,p.client,p.location,p.type,p.srcName,p.srcType].join(' ').toLowerCase().indexOf(t)>=0);}).sort(function(a,b){return codeNum(b.code||b.id)-codeNum(a.code||a.id);});
     box.replaceChildren();
     if(!rows.length)box.append(h('p',{class:'empty',text:S.projects.length?'No project matches.':'No projects yet. Go back and tap + Project.'}));
     rows.forEach(function(p){box.append(pCard(p,mode));});
@@ -764,7 +783,8 @@ function vProjectList(mode){
     h('div',{class:'page'},
       mode==='edit'?h('div',{class:'banner'},'Tap a project to edit it'):null,
       mode==='delete'?h('div',{class:'banner dang'},'Tap a project to delete it'):null,
-      h('input',{type:'search',placeholder:'Search projects',oninput:function(){q=this.value;draw();}}),box)];
+      h('div',{class:'stack'},h('input',{type:'search',placeholder:'Search projects',oninput:function(){q=this.value;draw();}}),
+        h('select',{'aria-label':'Given by',onchange:function(){src=this.value;draw();}},h('option',{value:'',text:'All sources'}),SRC_TYPES.slice(1).map(function(x){return h('option',{value:x,text:'Given by: '+x});}))),box)];
 }
 function vProjectForm(id){
   EDIT=true;
@@ -775,15 +795,33 @@ function vProjectForm(id){
   var scope=h('textarea',{placeholder:'What work is needed'});scope.value=p&&p.scope||'';f.scope=scope;
   var notes=h('textarea',{placeholder:'Only for you. Never sent to vendors.'});notes.value=p&&p.notes||'';f.notes=notes;
   var feeNote=h('input',{type:'text',autocomplete:'off',placeholder:'e.g. payable at the time of work order'});feeNote.value=p&&p.feeNote||'';
+  var valIn=h('input',{type:'number',inputmode:'decimal',min:'0',step:'any',placeholder:'e.g. 25.5',autocomplete:'off'});
+  var v0=p?valCr(p):null;if(v0!=null)valIn.value=trimN(v0,7);f.valueCr=valIn;
+  var basisSel=SEL('feeBasis',['Fixed fee','Percentage of project cost','Monthly retainer','Per site visit'],'Fixed fee');
+  var feeIn=h('input',{type:'number',inputmode:'decimal',min:'0',step:'any',autocomplete:'off'});if(p&&p.fee!==''&&p.fee!=null)feeIn.value=p.fee;f.fee=feeIn;
+  var feeLbl=null,calcBox=h('div',{class:'banner',style:'flex-direction:column;align-items:flex-start;gap:4px'});
+  var srcSel=SEL('srcType',SRC_TYPES,'Not set');
+  function calc(){
+    var pct=basisSel.value==='Percentage of project cost',lbl=feeIn.parentNode&&feeIn.parentNode.firstChild;
+    if(lbl)lbl.textContent=pct?'Our fee (% of project cost)':basisSel.value==='Fixed fee'?'Our fee (₹)':basisSel.value==='Monthly retainer'?'Our fee (₹ per month)':'Our fee (₹ per site visit)';
+    calcBox.hidden=!pct;if(!pct)return;
+    var v=valIn.value===''?null:Number(valIn.value),n=feeIn.value===''?null:Number(feeIn.value);
+    calcBox.replaceChildren();
+    calcBox.append(h('span',{class:'sec',style:'color:inherit',text:'Fee calculator'}));
+    if(v==null||n==null||!(v>=0)||!(n>=0)){calcBox.append(h('span',{text:'Enter the project value (Cr.) and the percentage to see your fee.'}));return;}
+    var r=v*1e7*n/100;
+    calcBox.append(h('span',{style:'font-size:20px;font-weight:800',text:trimN(n,4)+'% of '+fmtCr(v)+' = '+rupeesWords(r)}),h('span',{text:'Exactly '+inr(Math.round(r))}));
+  }
+  [valIn,feeIn].forEach(function(e){e.addEventListener('input',calc);});basisSel.addEventListener('change',calc);
   var err=h('p',{class:'err',role:'alert'}),save1=h('button',{class:'btn pri',type:'button'},'Save project');
   save1.addEventListener('click',function(){
     function t(k){return f[k].value.trim();}
     var rec={name:t('name'),client:t('client'),location:t('location'),type:f.type.value,status:f.status.value,start:f.start.value,end:f.end.value,
-      value:t('value')===''?'':Number(t('value')),scope:scope.value.trim(),notes:notes.value.trim(),
+      valueCr:t('valueCr')===''?'':Number(t('valueCr')),value:'',srcType:f.srcType.value,srcName:t('srcName'),srcPhone:t('srcPhone'),srcNote:t('srcNote'),scope:scope.value.trim(),notes:notes.value.trim(),
       fee:t('fee')===''?'':Number(t('fee')),feeBasis:f.feeBasis.value,feeNote:feeNote.value.trim()};
     var m='';
     if(!rec.name)m='Enter the project name.';
-    else if(rec.value!==''&&!(rec.value>=0))m='Enter the project value as a number.';
+    else if(rec.valueCr!==''&&!(rec.valueCr>=0))m='Enter the project value in crores as a number, for example 25.5.';
     else if(rec.fee!==''&&!(rec.fee>=0))m='Enter the fee as a number.';
     else if(rec.fee!==''&&rec.feeBasis==='Percentage of project cost'&&rec.fee>100)m='A percentage fee cannot be more than 100.';
     else if(rec.start&&rec.end&&rec.end<rec.start)m='Target completion is before the start date.';
@@ -797,23 +835,33 @@ function vProjectForm(id){
       if(p)goBack('projects/list');else location.replace('#projects/view/'+out.id);
     },function(e){err.textContent=e.message||'Could not save.';save1.disabled=false;save1.textContent='Save project';});
   });
-  return [bar(p?'Edit project':'New project',p?'projects/list':'projects'),
+  var out=[bar(p?'Edit project':'New project',p?'projects/list':'projects'),
     h('div',{class:'page'},
       h('div',{class:'panel'},
         h('div',null,h('span',{class:'code',text:p?(p.code||p.id):'PJ-'+nextPNum()}),h('p',{class:'note',text:p?'Project code':'Code is fixed when you save'})),
         fld('Project name *',I('name',{placeholder:'e.g. Earth work, Bhopal'})),
         fld('Client',I('client'),'Shared with vendors only if you tick it when sharing.'),
         fld('Location',I('location')),
-        h('div',{class:'row2'},fld('Type',SEL('type',['Residential','Commercial','Industrial','Infrastructure','Interior fit-out','Renovation','Other'],'Infrastructure')),fld('Status',SEL('status',['Planning','Ongoing','On hold','Completed'],'Planning'))),
-        h('div',{class:'row2'},fld('Start date',I('start',{type:'date'})),fld('Target completion',I('end',{type:'date'}))),
-        fld('Estimated project value (₹)',I('value',{type:'number',inputmode:'decimal',min:'0'}),'Shared with vendors only if you tick it when sharing.'),
+        h('div',{class:'stack'},fld('Type',SEL('type',['Residential','Commercial','Industrial','Infrastructure','Interior fit-out','Renovation','Other'],'Infrastructure')),fld('Status',SEL('status',['Planning','Ongoing','On hold','Completed'],'Planning'))),
+        h('div',{class:'stack'},fld('Start date',I('start',{type:'date'})),fld('Target completion',I('end',{type:'date'}))),
+        fld('Estimated Project Value in Rs. (Cr.)',valIn,'Enter in crores, for example 25.5. 1 Cr = ₹1,00,00,000. Shared with vendors only if you tick it when sharing.'),
         fld('Scope of work',scope),
         h('div',{class:'panel',style:'background:var(--bg)'},
           h('div',{class:'sec',text:'Fee for our services'}),
-          h('div',{class:'row2'},fld('Fee',I('fee',{type:'number',inputmode:'decimal',min:'0'})),fld('Basis',SEL('feeBasis',['Fixed fee','Percentage of project cost','Monthly retainer','Per site visit'],'Fixed fee'))),
+          fld('Basis',basisSel),
+          fld('',feeIn),
+          calcBox,
           fld('Fee note',feeNote)),
-        fld('Private notes',notes),docsBox(ds),err)),
+        h('div',{class:'panel',style:'background:var(--bg)'},
+          h('div',{class:'sec',text:'Project given by'}),
+          h('p',{class:'note',text:'For your records only. Never sent to vendors.'}),
+          fld('Source',srcSel),
+          fld('Name / company',I('srcName',{placeholder:'Who gave you this project'})),
+          fld('Phone',I('srcPhone',{type:'tel',inputmode:'tel'})),
+          fld('Note',I('srcNote',{placeholder:'e.g. referred at site meeting'}))),
+        fld('Private notes',notes),docsBox(ds,'Project documents'),err)),
     footBar(h('button',{class:'btn',type:'button',onclick:function(){goBack('projects/list');}},'Cancel'),save1)];
+  calc();return out;
 }
 function vProjectDetail(id){
   var p=byPid(id);if(!p)return notFound('projects/list');
@@ -823,8 +871,9 @@ function vProjectDetail(id){
       h('div',null,h('h2',{style:'font-size:24px;overflow-wrap:anywhere',text:p.name}),h('div',{style:'margin-top:6px'},h('span',{class:'pill',style:'margin-left:0',text:p.status||'Planning'}))),
       h('button',{class:'btn pri',type:'button',style:'flex:none',onclick:function(){SH=null;go('share/'+encodeURIComponent(p.id));}},icon('send',20),'Share with vendors'),
       h('div',{class:'panel'},kv('Client',p.client),kv('Location',p.location),kv('Type',p.type),kv('Start',fmtDay(p.start)),kv('Target completion',fmtDay(p.end)),
-        kv('Estimated value',p.value!==''&&p.value!=null?inr(p.value):''),kv('Scope of work',p.scope),kv('Our fee',ft?ft+(p.feeNote?' ('+p.feeNote+')':''):''),kv('Private notes',p.notes)),
-      h('div',{class:'panel'},h('div',{class:'sec',text:'Documents'}),docsList(p.docs)),
+        kv('Estimated value',valCr(p)!=null?fmtCr(valCr(p)):''),kv('Scope of work',p.scope),kv('Our fee',ft?ft+(p.feeNote?' ('+p.feeNote+')':''):''),kv('Private notes',p.notes)),
+      (p.srcType&&p.srcType!=='Not set')||p.srcName||p.srcPhone||p.srcNote?h('div',{class:'panel'},h('div',{class:'sec',text:'Project given by'}),kv('Source',p.srcType&&p.srcType!=='Not set'?p.srcType:''),kv('Name / company',p.srcName),kv('Phone',p.srcPhone),kv('Note',p.srcNote),p.srcPhone?h('div',{class:'callrow',style:'grid-template-columns:repeat(2,minmax(0,1fr))'},h('a',{class:'btn',href:telHref(p.srcPhone)},icon('phone'),'Call'),h('a',{class:'btn'+(waNum(p.srcPhone)?'':' off'),href:'https://wa.me/'+waNum(p.srcPhone),target:'_blank',rel:'noopener'},icon('chat'),'WhatsApp')):null):null,
+      h('div',{class:'panel'},h('div',{class:'sec',text:'Project documents'}),docsList(p.docs)),
       h('div',{class:'panel'},h('div',{class:'sec',text:'Shared with'}),
         (p.shares||[]).length?p.shares.map(function(s){var v=byId(s.v);return h('div',{class:'kv'},h('div',{class:'v',text:v?(v.code||v.id)+' · '+v.name:'Deleted vendor'}),h('div',{class:'note',text:s.ch+' · '+fmtAt(s.at)}));}):h('p',{class:'note',text:'Not shared with any vendor yet. Recorded when you tap WhatsApp or Email; it does not confirm the message was sent or read.'})),
       h('div',{class:'row2'},
@@ -870,7 +919,7 @@ function projectLines(p,o){
   if(p.type)L.push('Type: '+p.type);
   if(p.start)L.push('Start: '+fmtDay(p.start));
   if(p.end)L.push('Target completion: '+fmtDay(p.end));
-  if(o.value&&p.value!==''&&p.value!=null)L.push('Estimated project value: '+inr(p.value));
+  if(o.value&&valCr(p)!=null)L.push('Estimated project value: '+fmtCr(valCr(p)));
   if(p.scope)L.push('\nScope of work:\n'+p.scope);
   var ft=feeText(p);
   if(o.fee&&ft)L.push('\nOur fee: '+ft+(p.feeNote?' ('+p.feeNote+')':''));
@@ -879,12 +928,12 @@ function projectLines(p,o){
 function messageFor(p,v){return 'Hello '+who(v)+',\n'+SH.intro+'\n\n'+projectLines(p,SH.opts)+'\n\n'+(SH.mode==='sub'?'Please reply to confirm. Thank you.':'Thank you.');}
 function vShare(pid){
   EDIT=true;
-  if(!SH){SH={pid:pid&&byPid(pid)?pid:'',mode:'quote',sel:{},q:'',cat:'',opts:{client:false,value:false,fee:false},intro:introFor('quote'),subject:'',sent:{}};if(SH.pid)SH.subject=subjectFor(byPid(SH.pid),'quote');}
-  var projSel=h('select',{'aria-label':'Project',onchange:function(){SH.pid=this.value;var p=byPid(SH.pid);SH.subject=p?subjectFor(p,SH.mode):'';SH.sent={};drawAll();}},
+  if(!SH){SH={pid:pid&&byPid(pid)?pid:'',mode:'quote',sel:{},q:'',cat:'',opts:{client:false,value:false,fee:false},intro:introFor('quote'),subject:'',sent:{},docSel:{}};if(SH.pid)SH.subject=subjectFor(byPid(SH.pid),'quote');}
+  var projSel=h('select',{'aria-label':'Project',onchange:function(){SH.pid=this.value;var p=byPid(SH.pid);SH.subject=p?subjectFor(p,SH.mode):'';SH.sent={};SH.docSel={};drawAll();}},
     h('option',{value:'',text:'Choose a project…'}),
     S.projects.slice().sort(function(a,b){return codeNum(b.code||b.id)-codeNum(a.code||a.id);}).map(function(p){return h('option',{value:p.id,text:(p.code||p.id)+' · '+p.name});}));
   projSel.value=SH.pid;
-  var chipBox=h('div',{class:'chips'}),optBox=h('div'),msgBox=h('div'),listBox=h('div'),sendBox=h('div',{class:'panel'});
+  var chipBox=h('div',{class:'chips'}),optBox=h('div'),msgBox=h('div'),listBox=h('div'),sendBox=h('div',{class:'panel'}),docBox=h('div',{class:'panel'});
   var intro=h('textarea',{'aria-label':'Message',style:'min-height:110px',oninput:function(){SH.intro=this.value;drawSend();}});
   var subj=h('input',{type:'text','aria-label':'Email subject',oninput:function(){SH.subject=this.value;drawSend();}});
   var proj=function(){return SH.pid?byPid(SH.pid):null;};
@@ -897,7 +946,7 @@ function vShare(pid){
   }
   function drawOpts(){
     var p=proj()||{};optBox.replaceChildren();
-    [['client','Include client name',p.client],['value','Include estimated project value',p.value!==''&&p.value!=null?inr(p.value):''],['fee','Include our fee',feeText(p)]].forEach(function(o){
+    [['client','Include client name',p.client],['value','Include estimated project value',valCr(p)!=null?fmtCr(valCr(p)):''],['fee','Include our fee',feeText(p)]].forEach(function(o){
       var cb=h('input',{type:'checkbox',checked:!!(SH.opts[o[0]]&&o[2]),disabled:!o[2],onchange:function(){SH.opts[o[0]]=this.checked;drawSend();}});
       optBox.append(h('label',{class:'chk'},cb,h('span',null,o[1],h('small',{text:o[2]?o[2]:'Not filled in for this project'}))));
     });
@@ -938,24 +987,43 @@ function vShare(pid){
         h('a',{class:'act wa'+(w?'':' off'),'aria-label':'WhatsApp '+v.name,href:waHref(v,msg),target:'_blank',rel:'noopener',onclick:function(){markShared(p,v,'WhatsApp');}},icon('chat')),
         h('a',{class:'act'+(v.email?'':' off'),'aria-label':'Email '+v.name,href:'mailto:'+(v.email||'')+'?subject='+encodeURIComponent(SH.subject)+'&body='+encodeURIComponent(msg),onclick:function(){markShared(p,v,'Email');}},icon('mail'))));
     });
-    if((p.docs||[]).length)sendBox.append(h('button',{class:'btn',type:'button',onclick:function(){shareFiles(p);}},icon('clip',20),'Send project documents'),h('p',{class:'note',text:'Opens your phone share sheet so you can pick WhatsApp or email and attach the project files.'}));
     sendBox.append(h('details',{class:'pv'},h('summary',{text:'Preview message'}),h('pre',{text:messageFor(p,byId(ids[0]))})));
+  }
+  function chosenDocs(p){return (p.docs||[]).filter(function(d){return SH.docSel[d.id]!==false;});}
+  function drawDocs(){
+    var p=proj();docBox.replaceChildren();
+    docBox.append(h('div',{class:'sec',text:'Project documents'}));
+    if(!p){docBox.append(h('p',{class:'note',text:'Choose a project first.'}));return;}
+    var docs=p.docs||[];
+    if(!docs.length){
+      docBox.append(h('p',{class:'note',text:'No documents are attached to this project yet.'}),
+        h('button',{class:'btn',type:'button',onclick:function(){go('projects/edit/'+encodeURIComponent(p.id));}},icon('clip',20),'Attach documents to this project'));
+      return;
+    }
+    docs.forEach(function(d){
+      var cb=h('input',{type:'checkbox',checked:SH.docSel[d.id]!==false,onchange:function(){SH.docSel[d.id]=this.checked;drawDocs();}});
+      docBox.append(h('label',{class:'pick'},cb,h('div',{class:'main'},h('div',{class:'t',style:'font-weight:700;overflow-wrap:anywhere',text:d.name}),h('div',{class:'note',text:(d.label||'Document')+' · '+fmtSize(d.size||0)}))));
+    });
+    var n=chosenDocs(p).length;
+    docBox.append(h('button',{class:'btn pri',type:'button',disabled:!n,onclick:function(){shareFiles(p);}},icon('send',20),'Share details + '+n+(n===1?' document':' documents')),
+      h('p',{class:'note',text:'Opens your phone share sheet with the message and the ticked files. Pick WhatsApp or Gmail there, then choose the vendor. The WhatsApp and Email buttons above send text only.'}));
   }
   function shareFiles(p){
     toast('Preparing files…');
-    Promise.all((p.docs||[]).map(function(d){return B.getFile(d).then(function(b){return new File([b],d.name,{type:b.type||'application/octet-stream'});});})).then(function(files){
+    Promise.all(chosenDocs(p).map(function(d){return B.getFile(d).then(function(b){return new File([b],d.name,{type:b.type||d.type||'application/octet-stream'});});})).then(function(files){
       if(!(navigator.canShare&&navigator.canShare({files:files}))){toast('This phone cannot share these files from the app. Open each document from the project and tap Save / share.');return;}
-      return navigator.share({files:files,title:SH.subject,text:SH.intro+'\n\n'+projectLines(p,SH.opts)});
+      document.getElementById('toast').hidden=true;
+      return navigator.share({files:files,title:SH.subject,text:SH.intro+'\n\n'+projectLines(p,SH.opts)+'\n\n'+(SH.mode==='sub'?'Please reply to confirm. Thank you.':'Thank you.')});
     })['catch'](function(e){if(!e||e.name!=='AbortError')toast('Sharing did not start. Open each document from the project and tap Save / share.');});
   }
-  function drawAll(){drawChips();drawOpts();drawVendors();drawSend();intro.value=SH.intro;subj.value=SH.subject;}
+  function drawAll(){drawChips();drawOpts();drawVendors();drawSend();drawDocs();intro.value=SH.intro;subj.value=SH.subject;}
   drawAll();
   return [bar('Share project',SH.pid?'projects/view/'+SH.pid:'projects'),
     h('div',{class:'page'},
       h('div',{class:'panel'},h('div',{class:'sec',text:'1. Project'}),projSel),
       h('div',{class:'panel'},h('div',{class:'sec',text:'2. Message type'}),chipBox,fld('Message',intro,'Changing the type rewrites the message. You can edit it after.'),fld('Email subject',subj),h('div',{class:'sec',text:'Include'}),optBox),
       h('div',{class:'panel'},h('div',{class:'sec',text:'3. Vendors'}),h('div',{class:'stack'},vq,vcat),listBox),
-      sendBox)];
+      sendBox,docBox)];
 }
 
 /* ================= more: account, backup, csv, install ================= */
